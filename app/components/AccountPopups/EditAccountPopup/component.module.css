@@ -1,0 +1,78 @@
+.Container {
+    width: 480px;
+    height: 450px;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    background: #fff;
+    border: 1px solid #a3a3a3;
+    border-radius: 8px;
+}
+
+.Container header {
+    margin: 37px 0 40px 31px;
+}
+
+.CloseIcon {
+    position: absolute;
+    inset: 24px 0 0 432px;
+    cursor: pointer;
+}
+
+.Container h1 {
+    font-size: 24px;
+    color: #007AFD;
+}
+
+.Container .InputsContainer {
+    margin: 37px 0 0px 31px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 25px;  
+}
+
+.Container .InputsContainer label { 
+    color: #4D4D4D;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.Container .InputsContainer input { 
+    width: 120px;
+    height: 40px;
+    border-radius: 0;
+    outline: none;
+    border: none;
+    padding: 0;
+    border-radius: 8px;
+}
+
+
+.Container .Input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.Container .Input select {
+    width: 120px;
+    height: 40px;
+    border-radius: 0;
+    outline: none;
+    border: none;
+    padding: 0;
+    border-radius: 8px;
+    background: none;
+}
+
+.Container .Input div {
+    display: flex;
+    align-items: center;
+}
+
+.Buttons {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0 0 31px;
+}

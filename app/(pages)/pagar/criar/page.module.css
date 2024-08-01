@@ -1,0 +1,430 @@
+.Title {
+    color: #007afd;
+    font-size: 24px;
+}
+
+.Main {
+    width: 80vw;
+    max-width: 1536px;
+}
+
+.LaunchInformation {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+        'title title title title'
+        'input1 inpu2 input3 input4'
+        'input5 inpu6 input7 input8';
+    grid-column-gap: 12px;
+    column-gap: 45px;
+    row-gap: 16px;
+}
+
+.LaunchInformation h2 {
+   grid-area: title;
+   margin: 0 0 24px 0;
+}
+
+.LabelInputContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.LabelInputContainer .Label {
+    font-size: 12px;
+    color: #A3A3A3;
+}
+
+.LabelInputContainer .Label .AsterisckSpan {
+    color: red;
+}
+
+.LabelInputContainer .Input {
+    width: 100%;
+    height: 48px;
+    border: 1px solid #A3A3A3;
+    border-radius: 8px;
+    outline: none;
+    padding: 0 16px 0 16px;
+}
+
+.LabelInputContainer .InstallmentsIntervalInput {
+    width: 130px;
+    border: 1px solid #A3A3A3;
+    border-radius: 8px;
+    outline: none;
+    padding: 0 16px 0 16px;
+}
+
+.LabelInputContainer .Input[id="installmentsIntervalInput"] {
+    width: 130px;
+}
+
+.LabelInputContainer a {
+    color: #007afd;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.LaunchInformation input {
+    width: 100%;
+}
+
+.ValueInput span { 
+    height: 48px;
+    background: #8080803d;
+    display: flex;
+    align-items: center;
+    border-radius: 8px 0 0 8px;
+    width: 40px;
+    justify-content: center;
+    font-size: 14px;
+    position: absolute;
+} 
+
+.ValueInput {
+    display: flex;
+    align-items: start;
+    justify-content: flex-start;
+    position: relative;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ValueInput .Input {
+    width: 90px;
+    padding-left: 45px;
+}
+
+ .ApportionmentInput {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.LaunchInformation .ApportionmentInput span {
+    color: #565656;
+    font-weight: bold;
+}
+
+.AddApportionmentButton {
+    background: #007AFD;
+    width: 210px;
+    height: 48px;
+    font-size: 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    display: block;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.ApportionmentInput span {
+    color: #565656;
+    font-weight: bold;
+}
+
+.LaunchInformation .Apportionment div {
+    display: flex;
+    gap: 12px;
+}
+
+.Main section {
+    margin: 64px 0 0 27px;
+}
+
+.Main .ApportionmentInput div {
+    display: flex;
+    gap: 8px;
+}
+
+.Main .Apportionment h3 {
+    color: #353535;
+    font-size: 16px;
+}
+
+.Apportionment .ApportionmentInputs {
+    display: flex;
+    align-items: flex-end;
+    padding: 32px 0 24px 0;
+    justify-content: space-between;
+}
+
+.Apportionment .ApportionmentInputs input {
+    width: 150px;
+}
+
+.Apportionment .ApportionmentInputs input[placeholder="Categoria"],
+.Apportionment .ApportionmentInputs input[placeholder="Centro de custo"] { 
+    width: 150px;
+}
+
+.Apportionment .ApportionmentInputs button {
+    width: 240px;
+}
+
+.Apportionment .ApportionmentDetails {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+}
+
+.PaymentTerms {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+        'paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle'
+        'paymentTermsInput1 paymentTermsInput2 paymentTermsInput3 paymentTermsInput4 installmentsInteval';
+    grid-column-gap: 24px;
+    column-gap: 45px;
+    row-gap: 16px;
+}
+
+.PaymentTerms h2 {
+    grid-area: paymentTermsTitle;
+    margin: 0 0 24px 0;
+}
+
+.PaymentTerms input[placeholder="Forma de pagamento"],
+.PaymentTerms input[placeholder="Conta de recebimento"],
+.PaymentTerms input[placeholder="Parcelamento"],
+.PaymentTerms input[placeholder="Vencimento"],
+.PaymentTerms input[placeholder="Valor"] {
+    width: 100%;
+}
+
+.PaymentTerms input[placeholder="Parcelamento"] {
+    width: 70px;
+}
+
+.PaymentTerms input[type="number"]::-webkit-outer-spin-button,
+.PaymentTerms input[type="number"]::-webkit-inner-spin-button {
+  display: block;
+  width: 130px;
+  height: 30px;
+  margin: 0;  
+}
+
+.PaymentTerms input[type="number"] {
+  -moz-appearance: textfield; 
+}
+
+.PaymentTerms input[type="number"] {  
+  height: 48px;
+  position: relative;
+}
+
+.PaymentTerms .InstallmentsIntervalInput,
+.PaymentTerms .InstallmentsIntervalInput {
+  display: block;
+  width: 130px;
+  height: 30px;
+  margin: 0;  
+}
+
+.PaymentTerms .InstallmentsIntervalInput {
+  -moz-appearance: textfield; 
+}
+
+.PaymentTerms .InstallmentsIntervalInput {  
+  height: 48px;
+  position: relative;
+}
+
+.ReceivedAndInformNsuContainer {
+    gap: 32px;
+    display: flex;
+}
+
+.Received {
+    display: flex;
+    flex-direction: column;
+    align-items: self-start;
+    gap: 16px;
+}
+
+.Received div {
+    display: flex;
+    gap: 8px;
+}
+
+.InformNSU  {
+    display: flex;
+    flex-direction: column;
+    align-items: self-start;
+    gap: 16px;
+}
+
+.InformNSU .AddIcon {
+    color: #327CB1;
+    font-size: 24px;
+    border: 2px solid #327CB1;
+    border-radius: 24px;
+    padding: 0px 26px;
+    cursor: pointer;
+}
+
+.InformNSU input {
+    opacity: 0;
+    width: 100%;
+    border: none;
+    outline: none;
+    height: 100%;
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+} 
+
+.InformNSU span, .Received span, .RepeatRealise span {
+    color: #565656;
+    font-weight: bold;
+}
+
+.InformNSU input:checked + label {
+    left: calc(100% - 24px);
+    transition: .2s;
+    background: #919191;
+}
+
+.InformNSU div {
+    position: relative;
+    width: auto;
+    height: auto;
+    cursor: pointer;
+    border-radius: 24px;
+}
+
+.RepeatRealise {
+    grid-area: paymentTermsRepeatRealise;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+}
+
+.RepeatRealise input {
+    opacity: 0;
+    width: 100%;
+    border: none;
+    outline: none;
+    height: 100%;
+    position: absolute;
+    z-index: 2;
+} 
+
+.RepeatRealise span, .Received span, .MarkAs span {
+    color: #565656;
+    font-weight: bold;
+}
+
+.RepeatRealise input:checked + label {
+    left: calc(100% - 24px);
+    transition: .2s;
+    background: #919191;
+}
+
+.RepeatRealise div {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    border-radius: 24px;
+    background-color: #D9D9D9; 
+}
+
+.RepeatRealise label  {
+    width: 20px;
+    height: 20px;
+    border-radius: 100%;
+    position: absolute;
+    background: #E8E8E8;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 4px;  
+    transition: .2s;
+}
+
+.AddProff {
+    position: relative;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.AddProff input {
+    position: absolute;
+    height: 70%;
+    width: 100%;
+    top: 0;
+    opacity: 0;
+}
+
+.AddProff a {
+    color: #007afd;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.MarkAs {
+    grid-area: paymentTermsMarkAs;
+    display: flex;
+    gap: 32px;
+}
+
+.MarkAs div {
+    display: flex;
+    gap: 8px;
+}
+
+.GeneralComments {
+    display: flex;
+    flex-direction: column;
+}
+
+.GeneralComments label {
+    margin: 24px 0 20px 0;
+    font-weight: bold;
+    font-size: 12px;
+    color: #A3A3A3;
+}
+
+.GeneralComments textarea {
+    width: 98%;
+    height: 165px;
+    border-radius: 8px;
+    border: rgba(0, 0, 0, .1) 1px solid;
+    padding: 10px;
+    resize: vertical;
+    min-height: 50px;
+    max-height: 200px;
+}
+
+.Footer button {
+    background: #007AFD;
+    width: 100px;
+    height: 48px;
+    font-size: 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    margin: 24px 0 0 calc(100% - 100px);
+    display: block;
+}
+
+.ButtonAddApportionment button {
+    width: 230px;
+}
+
+#value {
+    width: 360px;
+}
+
+#inputValue {
+    width: 70%;
+}

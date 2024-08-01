@@ -1,0 +1,105 @@
+.Form {
+    width: 841px;
+    height: 559px;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    background: #fff;
+    border: 1px solid #a3a3a3;
+    border-radius: 8px;
+}
+
+.Form header {
+    display: grid;
+    grid-template-areas:
+        'image select';
+    align-items: center;
+    justify-content: center;
+    margin: 64px 0 32px 52px;
+    row-gap: 16px;
+    column-gap: 35px;
+}
+
+.Title {
+    color: #007AFD;
+    font-size: 20px;
+    grid-area: title;
+    margin: 64px 0 32px 52px;
+}
+
+.Form .Buttons {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0 0 56px;
+}
+
+.CloseIcon {
+    position: absolute;
+    inset: 24px 0 0 793px;
+    cursor: pointer;
+}
+
+.CardIcon {
+    padding: 18px;
+    background: rgba(0, 0, 0, .05);
+    border-radius: 8px;
+    align-self: flex-start;
+}
+
+.Inputs {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+
+.Inputs input {
+    width: 272px;
+}
+
+.SelectLabel {
+    font-size: 12px;
+    color: #A3A3A3;
+}
+
+.SelectBankDiv {
+    grid-area: select;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.Form select {
+	width: 272px;
+    height: 48px;
+    border: 1px solid #A3A3A3;
+    border-radius: 8px;
+    outline: none;
+    padding: 0 0 0 16px;
+    background: #fff;
+}
+
+.CardIssuer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.CardIssuer {
+    width: 288px;
+}
+
+.CardIssuer select {
+    width: 288px;
+}
+
+.DefaultAccountPayment {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.DefaultAccountPayment select {
+    width: 288px;
+}
+

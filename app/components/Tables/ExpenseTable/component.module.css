@@ -1,0 +1,62 @@
+.Header {
+    display: flex;
+    margin: 68px 0 0 0;
+    width: 98%;
+    gap: 32px;
+    justify-content: space-between;
+}
+
+.Table{
+    width: 98%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.Table .TableLabel{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr;
+    justify-content: space-evenly;
+    gap: 108px;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 8px 40px 8px 40px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    color: #4F9AD1;
+    font-weight: 600;
+    font-size: 16px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.Table .TableLabel input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    display: none;
+}
+
+.Table .TableContent {
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 21px;
+    margin: 21px 0 0 0;
+}
+
+.Table .TableContent .TableEmpty{
+    width: 100%;
+    text-align: center;
+    margin: auto;
+    font-size: 16px;
+    padding: 12px;
+    color: #656565;
+}
+
+.Table .TableContent .LineSeparator {
+    height: 2px;
+    width: 98%;
+    background: rgba(217, 217, 217, .5);
+    margin: 0 auto;
+}

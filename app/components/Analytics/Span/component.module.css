@@ -1,0 +1,17 @@
+.PrimarySpan {
+    color: #48BB78;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.TertiarySpan {
+    color: #4F9AD1;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.SecondarySpan {
+    color: #E53E3E;
+    font-weight: bold;
+    font-size: 20px;
+}

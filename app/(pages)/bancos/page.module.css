@@ -1,0 +1,211 @@
+.OverviewBankAccounts {
+    width: fit-content;
+    padding: 24px;
+    margin-top: 24px;
+    border-bottom: 1px solid rgba(224, 225, 226, 0.25);
+    color: #656565;
+}
+
+.OverviewBankAccounts ul {
+    display: flex;
+    list-style: none;
+    gap: 32px;
+}
+
+.BankAccount {
+    width: fit-content;
+    padding: 24px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    color: #353535;
+    box-sizing: border-box;
+    gap: 8px;
+    background-color: #F0F3F8;
+}
+
+.TheBank {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.BankAccountButton {
+    color: #4F9AD1;
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.BankingBalance {
+    width: fit-content;
+    padding: 24px;
+    margin: 24px auto;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(224, 225, 226, 0.25);
+}
+
+.Table {
+    width: 100%;
+    max-width: 1090px;
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.Table .TableLabel {
+    display: grid;
+    font-size: 16px;
+    color: #656565;
+    font-weight: 600;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 30px;
+}
+
+
+.Table .TableData {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    align-items: center;
+    gap: 30px;
+}
+
+
+.Table .TableData p {
+    font-size: 14px;
+    color: #232323;
+}
+
+.Actions {
+    display: flex;
+    gap: 16px;
+}
+
+.BankAccount img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.AccountBankName,
+.AccountBalanceDisplay {
+    font-weight: 600;
+}
+
+.AccountBankName,
+.AccountBalanceInfo {
+    font-size: 12px;
+}
+
+.AccountBankName {
+    color: #007AFD;
+}
+
+.AccountBalanceDisplay {
+    font-size: 16px;
+}
+
+.AccountAction {
+    font-size: 12px;
+    color: #4F9AD1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.TextHeader {
+    display: flex;
+    font-size: 18px;
+    margin-bottom: 24px;
+}
+
+.Loading {
+    font-size: 24px;
+    margin: 20px 0 ;
+    color: #353535;
+}
+
+.AddAccount {
+    width: 500px;
+    height: 578px;
+    background-color: white;
+    border-radius: 8px;
+    display: flex;
+    margin: auto;
+    flex-direction: column;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.AddAccount header {
+    margin: 64px 0 24px 0;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    justify-content: center;
+    width: 100%;
+}
+
+.AddAccount header strong {
+    color: #007AFD;
+    font-size: 20px;
+    width: 360px;
+}
+
+.AddAccount header img {
+    position: absolute;
+    inset: 24px 0 0 452px;
+    cursor: pointer;
+}
+
+.AddAccount ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin: 0 auto;
+    gap: 32px;
+}
+
+.AddAccount ul li {
+    width: 108px;
+    background-color: rgba(217, 217, 217, .20);
+    border-radius: 8px;
+    height: 108px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid rgba(0, 0, 0, .05);
+}
+
+.AddAccount ul li a {
+    text-decoration: none;
+    color: #007AFD;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.Container {
+    margin-top: 80px;
+}
+
+.modal_background{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    top: 0%;
+    left: 0%;
+}

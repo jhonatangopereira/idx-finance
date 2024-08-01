@@ -1,0 +1,44 @@
+.Container {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr;
+    justify-content: space-evenly;
+    gap: 108px;
+    padding: 8px 40px 8px 40px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    align-items: center;
+    text-align: left;
+}
+
+.Container input {
+    width: 16px;
+    height: 16px;
+}
+
+.Container div {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    text-align: left;
+}
+
+.PencilIcon {
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.PencilIcon:hover {
+    transform: scale(1.1);
+}
+
+.TrashIcon {
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.TrashIcon:hover {
+    transform: scale(1.1);
+}
