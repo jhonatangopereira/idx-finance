@@ -1,5 +1,5 @@
 const createIncome = async (authToken: string, data: any) =>  {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/incomes/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/incomes/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -10,7 +10,7 @@ const createIncome = async (authToken: string, data: any) =>  {
 };
 
 const getIncomeById = async (authToken: string, id: number) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/incomes/${id}/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/incomes/${id}/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ const getIncomeById = async (authToken: string, id: number) => {
 };
 
 const updateIncome = async(authToken: string, values: any, id: number) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/incomes/update/${id}/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/incomes/update/${id}/`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ const updateIncome = async(authToken: string, values: any, id: number) => {
 };
 
 const deleteIncomeById = async(authToken: string, id: number) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/incomes/delete/${id}/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/incomes/delete/${id}/`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -40,4 +40,4 @@ const deleteIncomeById = async(authToken: string, id: number) => {
     })
 };
 
-export { createIncome, getIncomeById, updateIncome, deleteIncomeById };
+export { createIncome, deleteIncomeById, getIncomeById, updateIncome };

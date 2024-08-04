@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import nookies from 'nookies'; // Importe nookies para manipulação de cookies
+import { useEffect } from 'react';
 
 const LogoutPage: React.FC = () => {
   const router = useRouter();
@@ -14,7 +14,7 @@ const LogoutPage: React.FC = () => {
       nookies.destroy(null, 'userId');
       
       // Redireciona o usuário para a página de login
-      router.replace(`${process.env.NEXT_PUBLIC_ACCOUNTS_DOMAIN_URL}`);
+      router.replace(`${"https://accounts.idxfinance.com.br"}`);
     }, 1500);
     return () => clearTimeout(timer);
   }, [router]);

@@ -1,4 +1,3 @@
-import { api } from './api';
 
 type Payment = {
     value: string,
@@ -26,7 +25,7 @@ type DataType = {
 }
 
 const fetchBanks = async (authToken: string) => {             
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/all/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/all/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -36,7 +35,7 @@ const fetchBanks = async (authToken: string) => {
 };
 
 const getBankById = async (authToken: string, id: number) => {
-	return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/${id}/`, {
+	return await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/${id}/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -47,7 +46,7 @@ const getBankById = async (authToken: string, id: number) => {
 
 
 const deleteAccountById = async (authToken: string, id: number) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/delete/${id}/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/delete/${id}/`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -57,7 +56,7 @@ const deleteAccountById = async (authToken: string, id: number) => {
 };  
 
 const createBank = async (authToken: string, data: any) => {             
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -67,4 +66,4 @@ const createBank = async (authToken: string, data: any) => {
     }); 
 };
 
-export { fetchBanks, getBankById, deleteAccountById, createBank }
+export { createBank, deleteAccountById, fetchBanks, getBankById };

@@ -6,7 +6,7 @@ export default function Logo(){
             src="/images/jsa/logo.png"
             width={200}
             height={66}
-            alt="JSA Logo"
+            alt="IDX Logo"
             />
     );
 }

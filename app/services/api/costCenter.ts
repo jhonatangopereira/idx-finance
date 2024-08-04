@@ -3,7 +3,7 @@ type DataType = {
 };
 
 const createCostCenter = async (values: DataType, authToken: string) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/cost-centers/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/cost-centers/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -13,4 +13,4 @@ const createCostCenter = async (values: DataType, authToken: string) => {
     })
 };
 
-export { createCostCenter }
+export { createCostCenter };

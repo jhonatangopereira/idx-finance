@@ -1,14 +1,14 @@
 'use client'
 
-import IncomeTable from '@/app/components/Tables/IncomeTable/IncomeTable';
-import Styles from '@/app/page.module.css';
 import ImportXlsx from '@/app/components/Buttons/import-export-xlsx';
+import IncomeTable from '@/app/components/Tables/IncomeTable/IncomeTable';
 import withAuth from '@/app/components/withAuth';
-import { DataItem, ApiResponse } from './types';
+import Styles from '@/app/page.module.css';
 import MessagePopup from '../../components/MessagePopup/MessagePopup';
+import { ApiResponse, DataItem } from './types';
 
-import React, { useEffect, useState } from 'react';
 import { parseCookies } from 'nookies';
+import { useEffect, useState } from 'react';
 
 const Receber = () => {
     const [data, setData] = useState<DataItem[]>([]);
@@ -29,7 +29,7 @@ const Receber = () => {
         if (authToken) {
             const fetchData = async () => {
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/incomes/all/`, {
+                    const response = await fetch(`${"https://idxfinance.com.br"}/api/incomes/all/`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',

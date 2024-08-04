@@ -13,7 +13,7 @@ const zona_regular = localFont({
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "JSA Finance",
+    title: "IDX Finance",
 };
 
 export default function RootLayout({

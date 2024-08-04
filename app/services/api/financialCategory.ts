@@ -3,7 +3,7 @@ type DataType = {
 };
 
 const createFinancialCategory = async (values: DataType, authToken: string) => {
-    return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-categories/`, {
+    return await fetch(`${"https://idxfinance.com.br"}/api/financial-categories/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -13,4 +13,4 @@ const createFinancialCategory = async (values: DataType, authToken: string) => {
     })
 };
 
-export { createFinancialCategory }
+export { createFinancialCategory };

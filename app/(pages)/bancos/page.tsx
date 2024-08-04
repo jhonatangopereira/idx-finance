@@ -1,26 +1,25 @@
 'use client'
 
-import type { Metadata } from 'next';
-import Styles from './page.module.css';
-import Link from 'next/link';
-import Image from 'next/image';
-import closeIcon from '../../../public/images/icons/close.svg';
 import withAuth from '@/app/components/withAuth';
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { parseCookies } from 'nookies';
+import { useEffect, useState } from 'react';
+import closeIcon from '../../../public/images/icons/close.svg';
 import { deleteAccountById } from '../../services/api/banks';
+import Styles from './page.module.css';
 
 // Account Popups
-import FinancialAccountPopup from '../../components/AccountPopups/FinancialAccountPopup/FinancialAccountPopup';
-import ConfirmPopup from '../../components/ConfirmPopup/ConfirmPopup';
+import AnotherAccountPopup from '../../components/AccountPopups/AnotherAccountPopup/AnotherAccount';
+import AutomaticApplicationAccountPopup from '../../components/AccountPopups/AutomaticApplicationAccountPopup/AutomaticApplicationPopup';
 import BoxAccountPopup from '../../components/AccountPopups/Box/BoxAccountPopup';
 import CreditCardAccountPopUp from '../../components/AccountPopups/CreditCardAccountPopup/CreditCardAccount';
-import InvestmentAccountPopup from '../../components/AccountPopups/InvestmentAccountPopup/InvestmentAccountPopup';
-import AutomaticApplicationAccountPopup from '../../components/AccountPopups/AutomaticApplicationAccountPopup/AutomaticApplicationPopup';
-import SavingAccountPopup from '../../components/AccountPopups/SavingAccountPopup/SavingAccountPopup';
-import AnotherAccountPopup from '../../components/AccountPopups/AnotherAccountPopup/AnotherAccount';
 import EditAccountPopup from '../../components/AccountPopups/EditAccountPopup/EditAccountPopup';
-import { ApiResponse, AccountData } from './types';
+import FinancialAccountPopup from '../../components/AccountPopups/FinancialAccountPopup/FinancialAccountPopup';
+import InvestmentAccountPopup from '../../components/AccountPopups/InvestmentAccountPopup/InvestmentAccountPopup';
+import SavingAccountPopup from '../../components/AccountPopups/SavingAccountPopup/SavingAccountPopup';
+import ConfirmPopup from '../../components/ConfirmPopup/ConfirmPopup';
+import { AccountData, ApiResponse } from './types';
 
 const Bancos = () => {
 
@@ -91,7 +90,7 @@ const Bancos = () => {
         if (authToken) {
             const fetchData = async () => {
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/all/`, {
+                    const response = await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/all/`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',

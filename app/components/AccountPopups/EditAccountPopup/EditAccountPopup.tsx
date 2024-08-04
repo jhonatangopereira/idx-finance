@@ -1,12 +1,11 @@
-import Styles from './component.module.css';
 import Image from 'next/image';
-import InputContainer from '../../InputContainer/InputContainer';
-import ButtonForm from '../ButtonForm/ButtonForm';
-import { EditAccountPopupProps } from './types';
 import MessagePopup from '../../MessagePopup/MessagePopup';
+import ButtonForm from '../ButtonForm/ButtonForm';
+import Styles from './component.module.css';
+import { EditAccountPopupProps } from './types';
 
-import { useState, ChangeEvent, useEffect } from 'react';
 import { parseCookies } from 'nookies';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 export default function EditAccountPopup({ onCloseFunction, accountName, bank, type, modality, description, id, finalBalance }: EditAccountPopupProps) {
@@ -23,7 +22,7 @@ export default function EditAccountPopup({ onCloseFunction, accountName, bank, t
     });
 
 	const handleEdit = async (data: any) => {
-		await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/financial-accounts/update/${id}/`, {
+		await fetch(`${"https://idxfinance.com.br"}/api/financial-accounts/update/${id}/`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',

@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, Suspense } from 'react';
 import { parseCookies, setCookie } from 'nookies';
+import { Suspense, useEffect } from 'react';
 import authService from '../services/authService';
 
 const withAuth = (WrappedComponent: React.ComponentType) => {
@@ -22,7 +22,7 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
             } else {
                 const user = authService.getCurrentUser();
                 if (!user) {
-                    router.replace(`${process.env.NEXT_PUBLIC_ACCOUNTS_DOMAIN_URL}`);
+                    router.replace(`${"https://accounts.idxfinance.com.br"}`);
                 }
             }
         }, [router, searchParams]);

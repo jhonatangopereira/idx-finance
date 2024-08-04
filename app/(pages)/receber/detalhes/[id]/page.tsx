@@ -1,22 +1,21 @@
 "use client";
 
-import StylesContainer from '@/app/page.module.css';
-import Styles from './page.module.css';
-import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import { getIncomeById, updateIncome } from '../../../../services/api/incomes';
-import { getBankById } from '../../../../services/api/banks';
-import MessagePopup from '../../../../components/MessagePopup/MessagePopup';
-import { createIncomeSchema } from '../../../../utils/validations/incomes';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import StylesContainer from '@/app/page.module.css';
+import MessagePopup from '../../../../components/MessagePopup/MessagePopup';
+import { getBankById } from '../../../../services/api/banks';
+import { getIncomeById, updateIncome } from '../../../../services/api/incomes';
+import { createIncomeSchema } from '../../../../utils/validations/incomes';
+import Styles from './page.module.css';
 
-import { useState, useCallback, useMemo, useEffect, useRef, ChangeEvent } from 'react';
-import { useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { parseCookies } from 'nookies';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
+import { useParams } from 'next/navigation';
+import { parseCookies } from 'nookies';
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 type ApportionmentType =  {            
     reference_code: string,
@@ -232,7 +231,7 @@ export default function Receita() {
 
         
        try {
-            await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/release-options/`, {
+            await fetch(`${"https://idxfinance.com.br"}/api/release-options/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

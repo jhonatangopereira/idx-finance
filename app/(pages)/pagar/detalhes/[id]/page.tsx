@@ -1,20 +1,18 @@
 "use client"
 
-import StylesContainer from '@/app/page.module.css';
-import Styles from './page.module.css';
-import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import { createExpenseSchema } from '../../../../utils/validations/expenses';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import StylesContainer from '@/app/page.module.css';
+import { createExpenseSchema } from '../../../../utils/validations/expenses';
+import Styles from './page.module.css';
 
-import { useState, useCallback, useMemo, FormEvent, useEffect, ChangeEvent } from 'react';
-import { useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { parseCookies } from 'nookies';
-import { format } from 'date-fns';
-import { DataType } from './types';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { format } from 'date-fns';
+import { useParams } from 'next/navigation';
+import { parseCookies } from 'nookies';
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 export default function Pagar() {  
     type ApportionmentType =  {            
@@ -143,7 +141,7 @@ export default function Pagar() {
 
     const updateExpense = async(values: any) => {
         const cookies = parseCookies();
-        await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/expenses/update/${id}/`, {
+        await fetch(`${"https://idxfinance.com.br"}/api/expenses/update/${id}/`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -157,7 +155,7 @@ export default function Pagar() {
         const cookies = parseCookies();
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/expenses/${id}/`, {
+            await fetch(`${"https://idxfinance.com.br"}/api/expenses/${id}/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -238,7 +236,7 @@ export default function Pagar() {
         const cookies = parseCookies();
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/release-options/`, {
+            await fetch(`${"https://idxfinance.com.br"}/api/release-options/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

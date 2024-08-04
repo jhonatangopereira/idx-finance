@@ -45,16 +45,12 @@ export default function ExportXlsx() {
 
     try {
       const response = await axios
-        .post(
-          `${process.env.NEXT_PUBLIC_URL_API}/api/import-expenses/`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Token ${authToken}`,
-            },
-          }
-        )
+        .post(`${"https://idxfinance.com.br"}/api/import-expenses/`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Token ${authToken}`,
+          },
+        })
         .then(() => {
           setPopUpData({
             open: true,
@@ -81,7 +77,7 @@ export default function ExportXlsx() {
   const handleExport = async () => {
     try {
       await axios
-        .get(`${process.env.NEXT_PUBLIC_URL_API}/api/export-expenses/`, {
+        .get(`${"https://idxfinance.com.br"}/api/export-expenses/`, {
           headers: {
             Authorization: `Token ${authToken}`,
           },

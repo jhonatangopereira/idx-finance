@@ -1,4 +1,3 @@
-import { api } from './api';
 
 type Payment = {
     value: number,
@@ -27,7 +26,7 @@ type DataType = {
 }
 
 const createExpense = async (values: any, authToken: string) => {
-    await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/expenses/`, {
+    await fetch(`${"https://idxfinance.com.br"}/api/expenses/`, {
         method: 'POST',
         headers: {            
             'Authorization': `Token ${authToken}`,
@@ -37,7 +36,7 @@ const createExpense = async (values: any, authToken: string) => {
 };
 
 const deleteExpense = async (authToken: string, id: number) => {
-	await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/expenses/delete/${id}/`, {
+	await fetch(`${"https://idxfinance.com.br"}/api/expenses/delete/${id}/`, {
 	    method: 'DELETE',
 	    headers: {
 	        'Content-Type': 'application/json',
@@ -47,7 +46,7 @@ const deleteExpense = async (authToken: string, id: number) => {
 }	
 
 const getAllExpenses = async (authToken: string) => {
-	return await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/expenses/all/`, {
+	return await fetch(`${"https://idxfinance.com.br"}/api/expenses/all/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

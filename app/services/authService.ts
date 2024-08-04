@@ -4,7 +4,7 @@ export interface User {
 }
 
 const login = async (username: string, password: string): Promise<User> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_URL_API}/token/`, {
+    const response = await fetch(`${"https://idxfinance.com.br"}/token/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
