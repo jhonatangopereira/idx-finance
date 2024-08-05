@@ -50,11 +50,12 @@ export default function ImportXlsx() {
     try {
       const response = await axios
         .post(`${"https://idxfinance.com.br"}/api/import-incomes/`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Token ${authToken}`,
-          },
-        })
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Token ${authToken}`,
+            },
+          }
+        )
         .then(() => {
           setPopUpData({
             open: true,

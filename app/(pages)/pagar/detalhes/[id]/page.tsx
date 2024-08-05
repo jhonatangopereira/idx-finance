@@ -1,18 +1,20 @@
 "use client"
 
+import StylesContainer from '@/app/page.module.css';
+import Styles from './page.module.css';
+import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
+import { createExpenseSchema } from '../../../../utils/validations/expenses';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
-import StylesContainer from '@/app/page.module.css';
-import { createExpenseSchema } from '../../../../utils/validations/expenses';
-import Styles from './page.module.css';
 
-import { yupResolver } from '@hookform/resolvers/yup';
-import { format } from 'date-fns';
+import { useState, useCallback, useMemo, FormEvent, useEffect, ChangeEvent } from 'react';
 import { useParams } from 'next/navigation';
-import { parseCookies } from 'nookies';
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { parseCookies } from 'nookies';
+import { format } from 'date-fns';
+import { DataType } from './types';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 export default function Pagar() {  
     type ApportionmentType =  {            
@@ -61,7 +63,7 @@ export default function Pagar() {
                 payment_method: '',
                 due_date: hasInstallment ? '' : '01/01/2024',
                 payment_date: hasInstallment ? '' : '01/01/2024',
-                status: null,
+                status: false,
                 installment: 0,
             },
             observations: '',
@@ -127,8 +129,6 @@ export default function Pagar() {
                 }
             }) : []
         };
-
-        console.log(data)
 
         try {
             await updateExpense(data)
@@ -203,7 +203,7 @@ export default function Pagar() {
                 setValue('payment.payment_date', data.payment[0].payment_date);
 
                 if(data.value !== data.payment[0].value && data.interval_between_installments !== 0) {
-                    setHasInstallment(true);Styles
+                    setHasInstallment(true);
 
                     if (data.value !== data.payment[0].value === data.payment) {
                         setValue('number_of_installments', "2x")
@@ -266,15 +266,11 @@ export default function Pagar() {
     const _value = watch('_value');
     const number_of_installments = watch('number_of_installments')
 
-    useEffect(() => {
-        if (Number(number_of_installments.split("x")[0]) > 0) {
-            let value = (((stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])).toFixed(2).toString()).replace(".", ","))
-            const formattedValue = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            setValue('payment.value', formattedValue);
-        } else {
-            setValue('payment.value', _value);
-        }
-    }, [_value, number_of_installments, setValue])
+    useEffect(() => {        
+        let value = (((stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])).toFixed(2).toString()).replace(".", ","))
+        const formattedValue = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        setValue('payment.value', formattedValue);        
+    }, [_value, number_of_installments, setValue]);
 
     const onInstallMentIntervalFielMouseEnter = () => {
         let installMentsIntervalInput = document.getElementById('installmentsIntervalInput') as HTMLInputElement;       
@@ -295,7 +291,7 @@ export default function Pagar() {
         const formattedValue = formatCurrency(inputValue);
         setFirstValue(formattedValue)
         setValue('_value', formattedValue);
-    };   
+    };  
 
     const handle_PercentageInputChange = (event: ChangeEvent<HTMLInputElement>, id: number): void => {
         const inputValue = event.target.value.replace(/\D/g, '');
@@ -314,12 +310,8 @@ export default function Pagar() {
         return numberValue;
     };
 
-    function transformStringToNumber(str: string) {            
-        let cleanedString = str.replace(',', '.');;           
-        cleanedString = cleanedString.replace(',', '.');
-        const number = parseFloat(cleanedString);
-
-        return number;
+    const transformStringToNumber = (str: string) => {       
+        return parseFloat(str.replace(/\./g, '').replace(',', '.'));
     }
 
     return (
@@ -388,32 +380,34 @@ export default function Pagar() {
                                             /> 
                                         {errors._value && <p className={Styles.Error}>{errors._value.message}</p>}
                                     </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Conta de recebimento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <select className={Styles.Input} {...register("financial_account")}>
-                                        <option value={0} selected>Selecione o banco</option>  
-                                            {userBanks.length >= 0 && userBanks.map((bank, index) => (
-                                                <option value={bank.id} key={index}>{bank.bank_name}</option>
-                                            ))}
-                                        </select>
-                                        {errors.financial_account && <p className={Styles.Error}>{errors.financial_account.message}</p>}
-                                    </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Forma de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <select className={Styles.Input} {...register("payment.payment_method")}>
-                                            <option value="">Selecione a forma de pagameto</option>
-                                            <option value="Boleto Bancário">Boleto Bancário</option>
-                                            <option value="Cashback">Cashback</option>
-                                            <option value="Cheque">Cheque</option>
-                                            <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                            <option value="Cartão de Crédito via Link">Cartão de Crédito via Link</option>
-                                            <option value="Cartão de Débito">Cartão de Débito</option>
-                                            <option value="Carteira Digital">Carteira Digital</option>
-                                            <option value="Pix">Pix</option>
-                                            <option value="Outro">Outro</option>
-                                        </select>                                   
-                                        {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
-                                    </div>
+                                    {markAs && (<>
+                                        <div className={Styles.LabelInputContainer}>
+                                            <label className={Styles.Label}>Conta de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                            <select className={Styles.Input} {...register("financial_account")}>
+                                            <option value={0} selected>Selecione o banco</option>  
+                                                {userBanks.length >= 0 && userBanks.map((bank, index) => (
+                                                    <option value={bank.id} key={index}>{bank.bank_name}</option>
+                                                ))}
+                                            </select>
+                                            {errors.financial_account && <p className={Styles.Error}>{errors.financial_account.message}</p>}
+                                        </div>
+                                        <div className={Styles.LabelInputContainer}>
+                                            <label className={Styles.Label}>Forma de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                            <select className={Styles.Input} {...register("payment.payment_method")}>
+                                                <option value="">Selecione a forma de pagameto</option>
+                                                <option value="Boleto Bancário">Boleto Bancário</option>
+                                                <option value="Cashback">Cashback</option>
+                                                <option value="Cheque">Cheque</option>
+                                                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                                <option value="Cartão de Crédito via Link">Cartão de Crédito via Link</option>
+                                                <option value="Cartão de Débito">Cartão de Débito</option>
+                                                <option value="Carteira Digital">Carteira Digital</option>
+                                                <option value="Pix">Pix</option>
+                                                <option value="Outro">Outro</option>
+                                            </select>                                   
+                                            {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
+                                        </div>
+                                    </>)}
                                     {!hasInstallment && (
                                         <div className={Styles.LabelInputContainer}>
                                             <label className={Styles.Label}>Vencimento <span className={Styles.AsterisckSpan}>*</span></label>
@@ -598,13 +592,17 @@ export default function Pagar() {
                                                                         {...register(`apportionment.${index}.value`)}                                   
                                                                         onChange={(e) => setApportionments(prevApportionments =>
                                                                             prevApportionments.map((apportionment, i) => {
-                                                                                    setValue(`apportionment.${index}.value`, (formatCurrency(e.target.value.replace(/\D/g, ''))).toString())
-                                                                                    return i === index ? { ...apportionment, value: (formatCurrency(e.target.value.replace(/\D/g, ''))).toString() } : apportionment
+                                                                                setValue(`apportionment.${index}.value`, (formatCurrency(e.target.value.replace(/\D/g, ''))).toString())
+                                                                                return i === index ? { ...apportionment, 
+                                                                                    value: (formatCurrency(e.target.value.replace(/\D/g, ''))).toString(),
+                                                                                    percentage: ((transformStringToNumber(((formatCurrency(e.target.value.replace(/\D/g, ''))).toString())) / transformStringToNumber(_value!)) * 100 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                                }
+                                                                                : apportionment
                                                                                 }
                                                                             )
                                                                         )}
                                                                     />   
-                                                                </div>                                      
+                                                                </div>    
                                                                 {errors.apportionment?.[index]?.value && (
                                                                   <p className={Styles.Error}>{errors.apportionment[index]?.value?.message}</p>
                                                                 )}
@@ -617,13 +615,17 @@ export default function Pagar() {
                                                                 <input 
                                                                     className={Styles.Input}
                                                                     placeholder='Ex.: 10'
-                                                                    type='text'                                                        
+                                                                    type='text'                                    
+                                                                    value={formatCurrency(apportionment.percentage.replace(/\D/g, '')).toString()}                      
                                                                     {...register(`apportionment.${index}.percentage`)}                                   
-                                                                    value={formatCurrency(apportionment.percentage.replace(/\D/g, '')).toString()}                                        
                                                                     onChange={(e) => setApportionments(prevApportionments =>
                                                                         prevApportionments.map((apportionment, i) => {
                                                                             handle_PercentageInputChange(e, index)
-                                                                            return i === index ? { ...apportionment, percentage: (formatCurrency(e.target.value.replace(/\D/g, ''))).toString() } : apportionment
+                                                                            setValue(`apportionment.${index}.value`, (transformStringToNumber(((formatCurrency(e.target.value.replace(/\D/g, ''))).toString())) / 100 * transformStringToNumber(((formatCurrency(_value!.replace(/\D/g, ''))).toString()))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+                                                                            return i === index ? { ...apportionment,
+                                                                                percentage: e.target.value,
+                                                                                value: (transformStringToNumber(((formatCurrency(e.target.value.replace(/\D/g, ''))).toString())) / 100 * transformStringToNumber(((formatCurrency(_value!.replace(/\D/g, ''))).toString()))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                            } : apportionment
                                                                         })
                                                                     )} 
                                                                 />    
@@ -661,8 +663,8 @@ export default function Pagar() {
                                                     </button>
                                                     </div>
                                                     <div className={Styles.ApportionmentDetails}>
-                                                        <span>Valor rateado: <b>R${(transformStringToNumber(apportionments[index].value) * ((transformStringToNumber(apportionments[index].percentage)) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                                                        <span>A ratear: <b>R$ {(transformStringToNumber(apportionments[index].value) - (transformStringToNumber(apportionments[index].value) * (Number(parseFloat(apportionments[index].percentage).toFixed(2)) / 100))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({100 - Number(parseFloat(apportionments[index].percentage).toFixed(2))}%)</b></span>
+                                                        <span>Valor rateado: <b>{transformStringToNumber(((formatCurrency(apportionments[index].value.replace(/\D/g, ''))).toString())).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></span>
+                                                        <span>A ratear: <b> {(transformStringToNumber(_value || '') - (transformStringToNumber(((formatCurrency(apportionments[index].value.replace(/\D/g, ''))).toString())))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) } ({100 - transformStringToNumber((formatCurrency(apportionments[index].percentage.replace(/\D/g, ''))))}%) </b></span>
                                                     </div> 
                                             </div>
                                             ))}
@@ -677,7 +679,6 @@ export default function Pagar() {
                                                 type="checkbox"
                                                 id="receveid"                                         
                                                 {...register("payment.status")}
-                                                value="Pago"
                                                 checked={markAs}
                                                 onChange={() => setMarkAs(previousValue => !previousValue)}
                                              />

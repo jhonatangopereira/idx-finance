@@ -1,3 +1,4 @@
+import { api } from './api';
 
 type Payment = {
     value: number,
@@ -30,8 +31,9 @@ const createExpense = async (values: any, authToken: string) => {
         method: 'POST',
         headers: {            
             'Authorization': `Token ${authToken}`,
+            'Content-Type': 'application/json'
         },
-        body: values
+        body: JSON.stringify(values)
     })
 };
 

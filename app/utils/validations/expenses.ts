@@ -5,12 +5,12 @@ const createExpenseSchema = yup.object().shape({
     supplier: yup.string().required("Digite o nome do fornecedor."),
     competence: yup.string().required("Digite a data de competência."),
     description: yup.string().required("Digite a descrição."),
-    financial_category: yup.number().min(1, "Escolha a categoria").required("Escolha a categoria."),
+    financial_category: yup.number().min(1, "Escolha a categoria.").required("Escolha a categoria."),
     _value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
     cost_center: yup.number().min(1, "Escolha o centro de custo.").required("Escolha o centro de custo."),
     code: yup.string(),
     observations: yup.string().nullable(),
-    status: yup.mixed().oneOf([yup.boolean(), yup.string(), "Pago", undefined, true, false, ""]).nullable(),
+    status: yup.boolean().nullable(),
     installment: yup.number().min(0, "Digite um valor positivo").required("Digite um valor.").required("Digite o valor da parcela."),
     attachment: yup.mixed(),
     number_of_installments:
@@ -21,7 +21,13 @@ const createExpenseSchema = yup.object().shape({
         .matches(/^\d+x?$/, 'Digite um valor válido.')
         .required('Digite o número de parcelas.'),   
     nsu: yup.string(),
-    financial_account: yup.number().min(1, "Escolha um banco válido.").required("Escolha uma conta bancária."),
+    financial_account: yup
+        .number()
+        .when('payment.status', {
+            is: (status: boolean) => status === true, 
+            then: (schema) => schema.min(1, "Selecione uma conta válida.").required("Escolha uma conta bancária."), 
+            otherwise: (schema) => schema.nullable() 
+    }),
     interval_between_installments:
             yup
             .number()
@@ -29,16 +35,20 @@ const createExpenseSchema = yup.object().shape({
             .typeError('Por favor, insira um número válido')
             .min(0, 'Digite um valor positivo')
             .required('Digite o número de dias.'),
-
     payment: yup.object({
         value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
-        payment_method: yup.string().required("Escolha a forma de pagamento."),
-        due_date: yup.string().required("Digite a data de vencimento."),
+        payment_method: yup.string()
+            .when('status', {
+                is: (status: boolean) => status === true,
+                then: (schema) => schema.required("Escolha a forma de pagamento.").test('not-empty', 'A forma de pagamento não pode ser vazia', value => value.trim() !== ''),
+                otherwise: (schema) => schema.nullable()
+        }),
+        due_date: yup.string(),
         payment_date: yup.string().required("Digite a data de pagamento."),
-        status: yup.mixed().oneOf([yup.boolean(), yup.string(), "Pago", undefined, true, false, ""]).nullable(),
+        status: yup.boolean(),
         installment: yup.number().min(0, "Digite um valor positivo").required("Digite um valor."),
     }),
-    apportionment: yup.array(yup.object({
+    apportionment: yup.array().of(yup.object().shape({
         reference_code: yup.string().nullable(),
         financial_category: yup.number().required("Digite a categoria."),
         value: yup.string().nullable(),

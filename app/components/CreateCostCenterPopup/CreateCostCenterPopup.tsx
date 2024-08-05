@@ -81,7 +81,7 @@ export default function CreateCostCenter ({ closeFunction }: CreateCostCenterPop
 		        	</header>
 		        	<main className={Styles.Main}>
 						<div className={Styles.LabelInputContainer}>
-							<label className={Styles.Label}>Nome da categoria</label>
+							<label className={Styles.Label}>Nome do centro de custo</label>
 							<input 
 								className={Styles.Input}
 								{...register('description')}

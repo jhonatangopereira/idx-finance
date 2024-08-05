@@ -13,4 +13,4 @@ const createCostCenter = async (values: DataType, authToken: string) => {
     })
 };
 
-export { createCostCenter };
+export { createCostCenter }

@@ -40,4 +40,4 @@ const deleteIncomeById = async(authToken: string, id: number) => {
     })
 };
 
-export { createIncome, deleteIncomeById, getIncomeById, updateIncome };
+export { createIncome, getIncomeById, updateIncome, deleteIncomeById };

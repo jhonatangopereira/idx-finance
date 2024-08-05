@@ -1,3 +1,4 @@
+import { api } from './api';
 
 type Payment = {
     value: string,
@@ -66,4 +67,4 @@ const createBank = async (authToken: string, data: any) => {
     }); 
 };
 
-export { createBank, deleteAccountById, fetchBanks, getBankById };
+export { fetchBanks, getBankById, deleteAccountById, createBank }

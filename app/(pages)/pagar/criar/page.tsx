@@ -1,23 +1,24 @@
 "use client";
 
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
-import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
 import StylesContainer from '@/app/page.module.css';
 import { createExpense } from '../../../services/api/expenses';
 import { createExpenseSchema } from '../../../utils/validations/expenses';
 import Styles from './page.module.css';
+import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
+import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
 import { DataType } from './types';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { parseCookies } from 'nookies';
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 
 export default function CreateAccount() {
     const [hasInstallment, setHasInstallment] = useState(false);
+    const [markAs, setMarkAs] = useState(false);
     const [apportionments, setApportionments] = useState<any[]>([]);
     const ap = apportionments;
     const [apportionmentNumber, setApportionmentsNumber] = useState(1);
@@ -37,8 +38,8 @@ export default function CreateAccount() {
                 value: "0",
                 payment_method: '',
                 due_date: hasInstallment ? '' : '01/01/2024',
-                payment_date: hasInstallment ? '' : '01/01/2024',
-                status: null,
+                payment_date: '',
+                status: false,
                 installment: 0,
             },
             observations: '',
@@ -65,6 +66,7 @@ export default function CreateAccount() {
         message: 'Nehum anexo adicionado.'
     });
     const attachment = watch('attachment');
+    const paymentStatus = watch('payment.status')
 
     const changeTotalValue = useCallback((value: number) => {
         setTotalValue(value)
@@ -94,21 +96,21 @@ export default function CreateAccount() {
             value: Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
             code: "code",
             observations: fields.observations,
-            status: fields.payment.status === false ? "" : fields.payment.status,
+            status: fields.payment.status === false ? "" : "Pago",
             installment: 1,
             number_of_installments: hasInstallment ? Number(fields.number_of_installments.split("x")[0]) : 1,
             nsu: "nsu",            
             financial_category: fields.financial_category,
             category: fields.financial_category,
             cost_center: Number(fields.cost_center),
-            financial_account: fields.financial_account,
+            financial_account: paymentStatus ? fields.financial_account : null,
             interval_between_installments: hasInstallment ? fields.interval_between_installments : 0,
             payment: {
                 value:  Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()) / (hasInstallment ? Number(number_of_installments.split("x")[0]) : 1),
-                payment_method: fields.payment.payment_method,
+                payment_method: paymentStatus ? fields.payment.payment_method : null,
                 due_date: hasInstallment ? format(new Date(fields.payment.due_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                payment_date: hasInstallment ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                status: fields.payment.status === false ? "" : fields.payment.status,
+                payment_date: paymentStatus ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : null,
+                status: fields.payment.status === false ? "" : "Pago",
                 installment: 1,
             },
             apportionment: isApportionmentInputChecked ? apportionments.map((a) => { 
@@ -120,23 +122,32 @@ export default function CreateAccount() {
                     reference_code: '-',
                 }
             }) : [],
-            attachment: fields.attachment[0]
+            attachment: ''
         };
 
-        for (const key in data) {
-            formData.append(key, JSON.stringify(data[key as keyof DataType]));
-        }
-
-        if (fields.attachment && fields.attachment[0]) {
-            formData.append('attachment', fields.attachment[0]);
-        }      
+        if (fields.attachment.length > 0) {
+      const file = fields.attachment[0];
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        data.attachment = event.target.result;
 
         try {
-            await createExpense(formData, cookies.authToken);
-            alert('Nova despesa criada com sucesso!');
+          await createExpense(data, cookies.authToken);
+          alert('Nova despesa criada com sucesso!');
         } catch (err) {
-            alert('Falha ao criar a nova despesa.');
-        } 
+          alert('Falha ao criar a nova despesa.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      try {
+        await createExpense(data, cookies.authToken);
+        alert('Nova despesa criada com sucesso!');
+      } catch (err) {
+        alert('Falha ao criar a nova despesa.');
+      }
+    }
     };
 
     const { id } = useParams();
@@ -174,22 +185,27 @@ export default function CreateAccount() {
     const number_of_installments = watch('number_of_installments');
 
     useEffect(() => {        
-         let value = (((stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])).toFixed(2).toString()).replace(".", ","))
+        let value = (((stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])).toFixed(2).toString()).replace(".", ","))
         const formattedValue = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         setValue('payment.value', formattedValue);        
     }, [_value, number_of_installments, setValue]);
 
     useEffect(() => {      
         if (hasInstallment) {
-            setValue('payment.due_date', '');
-            setValue('payment.payment_date', '');
+            setValue('payment.due_date', '');            
             setValue('alternative_due_date', '01/01/2024');
         } else {
-            setValue('payment.due_date', '01/01/2024');
-            setValue('payment.payment_date', '01/01/2024');
+            setValue('payment.due_date', '01/01/2024');            
             setValue('alternative_due_date', '');
         }
-    }, [hasInstallment]);
+
+        if (markAs) {
+            setValue('payment.payment_date', '');
+        } else {
+            setValue('payment.payment_date', '01/01/2024');
+        }
+
+    }, [hasInstallment, markAs]);
 
    useEffect(() => {
         if (attachment !== null && attachment.length > 0) {
@@ -253,34 +269,12 @@ export default function CreateAccount() {
         return numberValue;
     };
 
-    const transformStringToNumber = (str: string) => {            
-        let cleanedString = str.replace(',', '.');         
-        cleanedString = cleanedString.replace(',', '.');
-        const number = parseFloat(cleanedString);
-        return number;
+    const transformStringToNumber = (str: string) => {       
+        return parseFloat(str.replace(/\./g, '').replace(',', '.'));
     }
 
     const handleRemoveProof = () => {
         setValue('attachment', null);
-    }
-
-    const handleApportionmentValueChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
-        const numberOfApportionments = watch('apportionment');
-        
-        console.log(Number(e.target.value.replace(/\./g, '').replaceAll(',', '.')))
-        console.log(Number(_value!.replace(/\./g, '').replaceAll(',', '.')))
-        
-        setApportionments(prevApportionments =>
-            prevApportionments.map((apportionment, i) => {
-                    return i === index ? { ...apportionment, 
-                        value: (formatCurrency(e.target.value.replace(/\D/g, ''))).toString(),
-                        percentage: Number(e.target.value.replace(/\./g, '').replaceAll(',', '.')) / Number(_value!.replace(/\./g, '').replaceAll(',', '.'))
-                    }
-                    : apportionment
-                }
-            )
-        )            
-        
     }
 
     return (
@@ -352,32 +346,44 @@ export default function CreateAccount() {
                                         </div>
                                         {errors._value && <p className={Styles.Error}>{errors._value.message}</p>}
                                     </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Conta de recebimento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <select className={Styles.Input} {...register("financial_account")}>
-                                        <option value={0} selected>Selecione o banco</option>  
-                                            {userBanks.length >= 0 && userBanks.map((bank, index) => (
-                                                <option value={bank.id} key={index}>{bank.bank_name}</option>
-                                            ))}
-                                        </select>
-                                        {errors.financial_account && <p className={Styles.Error}>{errors.financial_account.message}</p>}
-                                    </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Forma de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <select className={Styles.Input} {...register("payment.payment_method")}>
-                                            <option value="">Selecione a forma de pagameto</option>
-                                            <option value="Boleto Bancário">Boleto Bancário</option>
-                                            <option value="Cashback">Cashback</option>
-                                            <option value="Cheque">Cheque</option>
-                                            <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                            <option value="Cartão de Crédito via Link">Cartão de Crédito via Link</option>
-                                            <option value="Cartão de Débito">Cartão de Débito</option>
-                                            <option value="Carteira Digital">Carteira Digital</option>
-                                            <option value="Pix">Pix</option>
-                                            <option value="Outro">Outro</option>
-                                        </select>                                   
-                                        {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
-                                    </div>
+                                    {paymentStatus && (<>
+                                        <div className={Styles.LabelInputContainer}>
+                                            <label className={Styles.Label}>Conta de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                            <select className={Styles.Input} {...register("financial_account")}>
+                                            <option value={0} selected>Selecione o banco</option>  
+                                                {userBanks.length >= 0 && userBanks.map((bank, index) => (
+                                                    <option value={bank.id} key={index}>{bank.bank_name}</option>
+                                                ))}
+                                            </select>
+                                            {errors.financial_account && <p className={Styles.Error}>{errors.financial_account.message}</p>}
+                                        </div>
+                                        <div className={Styles.LabelInputContainer}>
+                                            <label className={Styles.Label}>Forma de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                            <select className={Styles.Input} {...register("payment.payment_method")}>
+                                                <option value="">Selecione a forma de pagameto</option>
+                                                <option value="Boleto Bancário">Boleto Bancário</option>
+                                                <option value="Cashback">Cashback</option>
+                                                <option value="Cheque">Cheque</option>
+                                                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                                <option value="Cartão de Crédito via Link">Cartão de Crédito via Link</option>
+                                                <option value="Cartão de Débito">Cartão de Débito</option>
+                                                <option value="Carteira Digital">Carteira Digital</option>
+                                                <option value="Pix">Pix</option>
+                                                <option value="Outro">Outro</option>
+                                            </select>                                   
+                                            {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
+                                        </div> 
+                                        <div className={Styles.LabelInputContainer}>
+                                            <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                            <input
+                                                className={Styles.Input}
+                                                placeholder='Data de pagamento'
+                                                type='date'
+                                                {...register("payment.payment_date")}
+                                            />
+                                            {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
+                                        </div>
+                                    </>)}
                                     {!hasInstallment && (
                                         <div className={Styles.LabelInputContainer}>
                                             <label className={Styles.Label}>Vencimento <span className={Styles.AsterisckSpan}>*</span></label>
@@ -394,7 +400,7 @@ export default function CreateAccount() {
                                         <label className={Styles.Label}>Categoria <span className={Styles.AsterisckSpan}>*</span></label>
                                         <select className={Styles.Input} {...register("financial_category")}>
                                             <option value={0}>Selecione a categoria</option>  
-                                                {useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                {useCategories !== undefined && useCategories.length >= 1 && useCategories.map((category, index) => (
                                                     <option value={category.id} key={index}>{category.description}</option>
                                                 ))}                                        
                                         </select>
@@ -409,7 +415,7 @@ export default function CreateAccount() {
                                         <label className={Styles.Label}>Centro de custo <span className={Styles.AsterisckSpan}>*</span></label>
                                         <select className={Styles.Input} {...register("cost_center")}>
                                         <option value={0} selected>Selecione o centro de custo</option>  
-                                            {userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
+                                            {userCostCenters !== undefined && userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
                                                 <option value={category.id} key={index}>{category.description}</option>
                                             ))}
                                         </select>
@@ -463,16 +469,6 @@ export default function CreateAccount() {
                                         />
                                         {errors.payment?.due_date && <p className={Styles.Error}>{errors.payment.due_date.message}</p>}
                                     </div>                                                                
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input
-                                            className={Styles.Input}
-                                            placeholder='Data de pagamento'
-                                            type='date'
-                                            {...register("payment.payment_date")}
-                                        />
-                                        {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
-                                    </div>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>
                                             Intervalo entre parcelas 
@@ -542,7 +538,7 @@ export default function CreateAccount() {
                                                                 )}
                                                             >
                                                             <option value={0}>Selecione a categoria</option>  
-                                                                {useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                                {useCategories !== undefined && useCategories.length >= 1 && useCategories.map((category, index) => (
                                                                     <option value={category.id} key={index}>{category.description}</option>
                                                                 ))}
                                                             </select>
@@ -562,7 +558,16 @@ export default function CreateAccount() {
                                                                         type='text'        
                                                                         value={apportionment.value}                                                    
                                                                         {...register(`apportionment.${index}.value`)}                                   
-                                                                        onChange={(e) => handleApportionmentValueChange(e, index)}
+                                                                        onChange={(e) => setApportionments(prevApportionments =>
+                                                                            prevApportionments.map((apportionment, i) => {
+                                                                                return i === index ? { ...apportionment, 
+                                                                                    value: (formatCurrency(e.target.value.replace(/\D/g, ''))).toString(),
+                                                                                    percentage: ((transformStringToNumber(((formatCurrency(e.target.value.replace(/\D/g, ''))).toString())) / transformStringToNumber(_value!)) * 100 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                                }
+                                                                                : apportionment
+                                                                                }
+                                                                            )
+                                                                        )}
                                                                     />  
                                                                 </div>                                      
                                                                 {errors.apportionment?.[index]?.value && (
@@ -583,7 +588,11 @@ export default function CreateAccount() {
                                                                     onChange={(e) => setApportionments(prevApportionments =>
                                                                         prevApportionments.map((apportionment, i) => {
                                                                             handle_PercentageInputChange(e, index)
-                                                                            return i === index ? { ...apportionment, percentage: e.target.value } : apportionment
+                                                                            console.log(e.target.value)
+                                                                            return i === index ? { ...apportionment,
+                                                                                percentage: e.target.value,
+                                                                                value: (transformStringToNumber(((formatCurrency(e.target.value.replace(/\D/g, ''))).toString())) / 100 * transformStringToNumber(((formatCurrency(_value!.replace(/\D/g, ''))).toString()))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                                            } : apportionment
                                                                         })
                                                                     )} 
                                                                 />     
@@ -604,7 +613,7 @@ export default function CreateAccount() {
                                                                 )}
                                                             >
                                                             <option value={0} selected>Selecione o centro de custo</option>  
-                                                                {userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
+                                                                {userCostCenters !== undefined && userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
                                                                     <option value={category.id} key={index}>{category.description}</option>
                                                                 ))}
                                                             </select>
@@ -621,8 +630,8 @@ export default function CreateAccount() {
                                                     </button>
                                                     </div>
                                                     <div className={Styles.ApportionmentDetails}>
-                                                        <span>Valor rateado: <b>R${(transformStringToNumber(apportionments[index].value) * (((apportionments[index].percentage)) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                                                        <span>A ratear: <b>R$ {(transformStringToNumber(apportionments[index].value) - ((apportionments[index].value) * (Number(parseFloat(apportionments[index].percentage).toFixed(2)) / 100))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({100 - Number(parseFloat(apportionments[index].percentage).toFixed(2))}%)</b></span>
+                                                        <span>Valor rateado: <b>{(transformStringToNumber(apportionments[index].value)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></span>
+                                                        <span>A ratear: <b>{(transformStringToNumber(_value || '') - (transformStringToNumber(apportionments[index].value))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) } ({100 - transformStringToNumber(apportionments[index].percentage)}%) </b></span>
                                                     </div> 
                                             </div>
                                             ))}
@@ -652,7 +661,7 @@ export default function CreateAccount() {
                                         <div className={Styles.MarkAs}>
                                             <span>Marcar como</span>
                                             <div>
-                                                <input type="checkbox" id="receveid" value="Pago" {...register("payment.status")} />
+                                                <input type="checkbox" onInput={() => setMarkAs(previousValue => !previousValue)} id="receveid" {...register("payment.status")} />
                                                 <label htmlFor="receveid">Pago</label>
                                                 <input type="checkbox" id="hasInstallment" onInput={() => setHasInstallment(previousValue => !previousValue)} />
                                                 <label htmlFor="hasInstallment">Parcelado</label>

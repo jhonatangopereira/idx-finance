@@ -13,4 +13,4 @@ const createFinancialCategory = async (values: DataType, authToken: string) => {
     })
 };
 
-export { createFinancialCategory };
+export { createFinancialCategory }

@@ -3,19 +3,21 @@
 import StylesContainer from '@/app/page.module.css';
 import Styles from './page.module.css';
 
+import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
+import { createIncome } from '../../../services/api/incomes';
+import { fetchBanks } from '../../../services/api/banks';
+import MessagePopup from '../../../components/MessagePopup/MessagePopup';
+import { createIncomeSchema } from '../../../utils/validations/incomes';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
-import MessagePopup from '../../../components/MessagePopup/MessagePopup';
-import { createIncome } from '../../../services/api/incomes';
-import { createIncomeSchema } from '../../../utils/validations/incomes';
 
+import { useState, useCallback, useMemo, FormEvent, useEffect, ChangeEvent } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
-import { parseCookies } from 'nookies';
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { parseCookies } from 'nookies'
 import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
 
 type ApportionmentType =  {            
     reference_code: string,

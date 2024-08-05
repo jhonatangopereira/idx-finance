@@ -33,7 +33,7 @@ type DataType = {
 	category: number,
 	interval_between_installments: number,
 	apportionment: Apportionment[],
-	attachment: File | null
+	attachment: File | null | string 
 }
 
 type FieldsType = {

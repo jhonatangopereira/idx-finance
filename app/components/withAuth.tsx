@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
 import { parseCookies, setCookie } from 'nookies';
-import { Suspense, useEffect } from 'react';
 import authService from '../services/authService';
 
 const withAuth = (WrappedComponent: React.ComponentType) => {
