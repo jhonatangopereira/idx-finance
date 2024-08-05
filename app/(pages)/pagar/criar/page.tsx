@@ -1,19 +1,19 @@
 "use client";
 
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
+import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
+import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
 import StylesContainer from '@/app/page.module.css';
 import { createExpense } from '../../../services/api/expenses';
 import { createExpenseSchema } from '../../../utils/validations/expenses';
 import Styles from './page.module.css';
-import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
-import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
 import { DataType } from './types';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { parseCookies } from 'nookies';
-import { useCallback, useEffect, useMemo, useState, ChangeEvent } from 'react';
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 export default function CreateAccount() {
@@ -129,16 +129,18 @@ export default function CreateAccount() {
       const file = fields.attachment[0];
       const reader = new FileReader();
       
-      reader.onload = async (event) => {
-        data.attachment = event.target.result;
-
+    reader.onload = async (event) => {
+      if (event.target) {
+        data.attachment = event.target.result as string;
+    
         try {
           await createExpense(data, cookies.authToken);
           alert('Nova despesa criada com sucesso!');
         } catch (err) {
           alert('Falha ao criar a nova despesa.');
         }
-      };
+      }
+    };
       reader.readAsDataURL(file);
     } else {
       try {

@@ -2,7 +2,7 @@ type Payment = {
     value: number,
     payment_method: string,
     due_date: string,
-    payment_date: string,
+    payment_date: string | null,
     status: string | boolean,
     installment: number
 }
