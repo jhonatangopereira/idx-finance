@@ -1,15 +1,15 @@
 'use client'
 
-import Styles from './component.module.css';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import { FormTypes, CreateCategoryPopupProps, ErrorType } from './types';
-import { createFinancialCategory } from '@/app/services/api/financialCategory';
 import MessagePopup from '@/app/components/MessagePopup/MessagePopup';
+import { createFinancialCategory } from '@/app/services/api/financialCategory';
+import Styles from './component.module.css';
+import { CreateCategoryPopupProps, FormTypes } from './types';
 
-import { useForm } from 'react-hook-form';
+import Image from 'next/image';
 import { parseCookies } from 'nookies';
 import { useState } from 'react';
-import Image from 'next/image';
+import { useForm } from 'react-hook-form';
 
 export default function CreateCategoryPopup ({ closeFunction }: CreateCategoryPopupProps) {
 
@@ -32,12 +32,12 @@ export default function CreateCategoryPopup ({ closeFunction }: CreateCategoryPo
 			const response = await createFinancialCategory(data, cookies.authToken);
 
 			if (response.ok) {
+				handleClick();
 				return setPopupData({
 					open: true,
 					title: 'Sucesso!',
 					text: 'Categoria criada com sucesso.'
 				});
-
 			}
 
 			throw new Error('Tente novamente mais tarde.');

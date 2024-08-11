@@ -3,6 +3,7 @@
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import CreateSupplierPopup from '@/app/components/CreateSupplierPopup/CreateSupplierPopup';
 import StylesContainer from '@/app/page.module.css';
 import { createExpense } from '../../../services/api/expenses';
 import { createExpenseSchema } from '../../../utils/validations/expenses';
@@ -11,17 +12,16 @@ import { DataType } from './types';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
-import { useParams } from 'next/navigation';
 import { parseCookies } from 'nookies';
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 export default function CreateAccount() {
     const [hasInstallment, setHasInstallment] = useState(false);
+    const [hasBankSlip, setHasBankSlip] = useState(false);
     const [markAs, setMarkAs] = useState(false);
     const [apportionments, setApportionments] = useState<any[]>([]);
     const ap = apportionments;
-    const [apportionmentNumber, setApportionmentsNumber] = useState(1);
     const { register, handleSubmit, formState: { errors }, watch, setValue, getValues } = useForm({
         resolver: yupResolver(createExpenseSchema),
         defaultValues: {
@@ -33,8 +33,11 @@ export default function CreateAccount() {
             financial_category: 0,
             cost_center: 0,
             attachment: '',
-            interval_between_installments: hasInstallment ? 1 : 1,
+            supplier: 0,
+            interval_between_installments: hasInstallment ? 30 : 1,
+            document_number: '',
             payment: {
+                bank_slip: hasBankSlip,
                 value: "0",
                 payment_method: '',
                 due_date: hasInstallment ? '' : '01/01/2024',
@@ -55,26 +58,14 @@ export default function CreateAccount() {
     const [isApportionmentInputChecked, setIsApportionmentInputChecked] = useState(false);
     const [totalValue, setTotalValue] = useState(0);
     const [percentage, setPercentage] = useState(0);
-    const [popUpData, setPopUpData] = useState({
-        open: false,
-        title: '',
-        text: ''
-    });     
     const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] = useState(false);
     const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] = useState(false);
+    const [isSupplierPopupVisible, setIsSupplierPopupVisible] = useState(false);
     const [attachmentStatus, setAttachment] = useState({
         message: 'Nehum anexo adicionado.'
     });
     const attachment = watch('attachment');
     const paymentStatus = watch('payment.status')
-
-    const changeTotalValue = useCallback((value: number) => {
-        setTotalValue(value)
-    }, [totalValue]); 
-
-    const changePercentage = useCallback((value: number) => {
-        setPercentage(value)
-    }, [percentage]);
 
     const apportionmentValue = useMemo(() => (
         totalValue * (percentage / 100)
@@ -103,15 +94,24 @@ export default function CreateAccount() {
             financial_category: fields.financial_category,
             category: fields.financial_category,
             cost_center: Number(fields.cost_center),
+            document_number: fields.document_number,
             financial_account: paymentStatus ? fields.financial_account : null,
             interval_between_installments: hasInstallment ? fields.interval_between_installments : 0,
             payment: {
-                value:  Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()) / (hasInstallment ? Number(number_of_installments.split("x")[0]) : 1),
+                bank_slip: fields.bank_slip,
                 payment_method: paymentStatus ? fields.payment.payment_method : null,
-                due_date: hasInstallment ? format(new Date(fields.payment.due_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
                 payment_date: paymentStatus ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : null,
                 status: fields.payment.status === false ? "" : "Pago",
                 installment: 1,
+                installment_values: hasInstallment ? fields.installment_values.map((installment: any) => {
+                    return {
+                        value: Number(parseFloat(installment.value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
+                        due_date: format(new Date(installment.payment + 'T00:00:00'), 'dd/MM/yyyy')
+                    }
+                }) : [{
+                    value: Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
+                    due_date: format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy')
+                }]
             },
             apportionment: isApportionmentInputChecked ? apportionments.map((a) => { 
                 return {
@@ -152,10 +152,10 @@ export default function CreateAccount() {
     }
     };
 
-    const { id } = useParams();
     const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: '' }]);
     const [useCategories, setUserCategories] = useState([{ id: 0, description: '' }]);
     const [userCostCenters, setUserCostCenters] = useState([{ id: 0, description: '' }]);
+    const [userSuppliers, setUserSuppliers] = useState([{ id: 0, name: '' }])
 
     const fetchBanks = async () => {
         const cookies = parseCookies();
@@ -173,6 +173,7 @@ export default function CreateAccount() {
                     setUserBanks(data.financial_accounts);
                     setUserCategories(data.financial_categories);
                     setUserCostCenters(data.cost_centers);
+                    setUserSuppliers(data.suppliers);
                 });
         } catch (err) {
             console.log(err);
@@ -291,6 +292,11 @@ export default function CreateAccount() {
                     <CreateCostCenterPopup closeFunction={setIsCostCenterPopupVisible}/>
                 </div>
             )}
+            {isSupplierPopupVisible && (
+                <div className="ModalBackground">
+                    <CreateSupplierPopup closeFunction={setIsSupplierPopupVisible}/>
+                </div>
+            )}
             <form onSubmit={handleSubmit(getData)}>
                 <main>
                     <div className={StylesContainer.Container}>
@@ -302,14 +308,18 @@ export default function CreateAccount() {
                                     <h2>Informações de lançamento</h2>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Fornecedor <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input 
-                                            className={Styles.Input}
-                                            placeholder='Fornecedor'
-                                            type='text'
-                                            {...register("supplier")}
-                                            maxLength={200}
-                                        />
-                                        {errors.supplier && <p className={Styles.Error}>{errors.supplier.message}</p>}
+                                        <select className={Styles.Input} {...register("supplier")}>
+                                            <option value={0}>Selecione o fornecedor</option>  
+                                                {userSuppliers !== undefined && userSuppliers.length >= 1 && userSuppliers.map((supplier, index) => (
+                                                    <option value={supplier.id} key={index}>{supplier.name}</option>
+                                                ))}                                        
+                                        </select>
+                                            <a
+                                                onClick={() => setIsSupplierPopupVisible(previousValue => !previousValue)}
+                                            >+ Criar novo fornecedor</a>
+                                        {errors.supplier && (
+                                          <p className={Styles.Error}>{errors.supplier?.message}</p>
+                                        )}
                                     </div>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Data de competência <span className={Styles.AsterisckSpan}>*</span></label>
@@ -428,6 +438,17 @@ export default function CreateAccount() {
                                             <p className={Styles.Error}>{errors.cost_center.message}</p>
                                         )} 
                                     </div>
+                                    <div className={Styles.LabelInputContainer}>
+                                        <label className={Styles.Label}>Número do documento <span className={Styles.AsterisckSpan}>*</span></label>
+                                        <input
+                                            className={Styles.Input}
+                                            placeholder='Número do documento'
+                                            type='text'
+                                            {...register("document_number")}
+                                            maxLength={200}
+                                        />
+                                        {errors.document_number && <p className={Styles.Error}>{errors.document_number.message}</p>}
+                                    </div>
                                 </section>                           
                                 {hasInstallment && (
                                 <section className={Styles.PaymentTerms}>
@@ -437,54 +458,47 @@ export default function CreateAccount() {
                                         <input
                                             className={Styles.Input}
                                             placeholder='Ex.: 3x'
-                                            type='text'          
-                                            id="installmentsIntervalInput"        
+                                            type='text'
+                                            id="installmentsIntervalInput"
                                             onMouseEnter={onInstallMentIntervalFielMouseEnter}
-                                            onMouseLeave={onInstallMentIntervalFielMouseLeave}                      
+                                            onMouseLeave={onInstallMentIntervalFielMouseLeave}
                                             {...register("number_of_installments")}
                                             min={2}
                                         />
                                         {errors.number_of_installments && <p className={Styles.Error}>{errors.number_of_installments.message}</p>}
-                                    </div>                               
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Valor <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <div className={Styles.ValueInput} id="inputValue">
-                                            <span>R$</span>
-                                            <input
-                                                className={Styles.Input}
-                                                placeholder='Ex.: 120,50'
-                                                type='text'
-                                                disabled
-                                                {...register("payment.value")}
-                                                min={0}
-                                            />                                        
+                                    </div>
+                                    {Array.from({ length: parseInt(getValues("number_of_installments") || "0") }, (_, index) => (
+                                        <div key={index} className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}>
+                                            <div className={Styles.ValueInputInstallment}>
+                                                <label className={Styles.Label}>Valor da parcela {index + 1} <span className={Styles.AsterisckSpan}>*</span></label>
+                                                <div className={Styles.ValueInput}>
+                                                    <span>R$</span>
+                                                    <input
+                                                        className={Styles.Input}
+                                                        placeholder='Ex.: 50,00'
+                                                        type='text'
+                                                        {...register(`payment.installment_values.${index}.value`)}
+                                                        min={0}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {errors.payment?.installment_values?.[index]?.value && (
+                                                <p className={Styles.Error}>{errors.payment?.installment_values[index]?.value?.message}</p>
+                                            )}
+                                            <div className={Styles.DueDateInput}>
+                                                <label className={Styles.Label}>Data de vencimento da parcela {index + 1} <span className={Styles.AsterisckSpan}>*</span></label>
+                                                <input
+                                                    className={Styles.Input}
+                                                    placeholder='Data de vencimento'
+                                                    type='date'
+                                                    {...register(`payment.installment_values.${index}.due_date`)}
+                                                />
+                                                {errors.payment?.installment_values?.[index]?.due_date && (
+                                                    <p className={Styles.Error}>{errors.payment?.installment_values[index]?.due_date?.message}</p>
+                                                )}
+                                            </div>
                                         </div>
-                                        {errors.payment?.value && <p className={Styles.Error}>{errors.payment.value.message}</p>}
-                                    </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>1° data de vencimento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input
-                                            className={Styles.Input}
-                                            placeholder='1° data de vencimento'
-                                            type='date'
-                                            {...register("payment.due_date")}
-                                        />
-                                        {errors.payment?.due_date && <p className={Styles.Error}>{errors.payment.due_date.message}</p>}
-                                    </div>                                                                
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>
-                                            Intervalo entre parcelas 
-                                            <span className={Styles.AsterisckSpan}>*</span>
-                                        </label>
-                                        <input
-                                            className={Styles.InstallmentsIntervalInput}
-                                            placeholder='Ex.: 30 dias'                                        
-                                            type='number'                                        
-                                            min={0}
-                                            {...register("interval_between_installments")}
-                                        />
-                                        {errors?.interval_between_installments && <p className={Styles.Error}>{errors.interval_between_installments.message}</p>}
-                                    </div>
+                                    ))}
                                 </section> )}
                                 <section>
                                     <div className={Styles.ApportionmentInput}>
@@ -518,7 +532,7 @@ export default function CreateAccount() {
                                             onClick={addNewApportionment}
                                         >
                                             Adicionar novo rateio
-                                        </button>                                          
+                                        </button>
                                 </section>
                                 {isApportionmentInputChecked === true && (
                                     <section className={Styles.Apportionment}>
@@ -652,9 +666,7 @@ export default function CreateAccount() {
                                        />
                                        <p>{attachmentStatus.message}</p>
                                         {attachment !== '' && (
-                                            <a                                            
-                                               onClick={handleRemoveProof}                                           
-                                            >
+                                            <a onClick={handleRemoveProof}>
                                                - Remover anexo
                                             </a> 
                                         )}
@@ -667,6 +679,8 @@ export default function CreateAccount() {
                                                 <label htmlFor="receveid">Pago</label>
                                                 <input type="checkbox" id="hasInstallment" onInput={() => setHasInstallment(previousValue => !previousValue)} />
                                                 <label htmlFor="hasInstallment">Parcelado</label>
+                                                <input type="checkbox" id="hasBankSlip" onInput={() => setHasBankSlip(previousValue => !previousValue)} {...register("payment.bank_slip")} />
+                                                <label htmlFor="hasBankSlip">Boleto em mãos</label>
                                             </div>
                                         </div>
                                     </section>

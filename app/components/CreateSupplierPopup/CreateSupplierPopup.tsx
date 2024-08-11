@@ -2,16 +2,16 @@
 
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
 import MessagePopup from '@/app/components/MessagePopup/MessagePopup';
-import { createCostCenter } from '@/app/services/api/costCenter';
+import { createSupplier } from '@/app/services/api/supplier';
 import Styles from './component.module.css';
-import { CreateCostCenterPopupProps, FormTypes } from './types';
+import { CreateSupplierPopupProps, FormTypes } from './types';
 
 import Image from 'next/image';
 import { parseCookies } from 'nookies';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-export default function CreateCostCenter ({ closeFunction }: CreateCostCenterPopupProps) {
+export default function CreateSupplierPopup ({ closeFunction }: Readonly<CreateSupplierPopupProps>) {
 
 	const { handleSubmit, register } = useForm<FormTypes>();
 	const cookies = parseCookies();
@@ -23,20 +23,20 @@ export default function CreateCostCenter ({ closeFunction }: CreateCostCenterPop
 
 	const getData = async (fields: FormTypes) => {
 		const data = {
-			description: fields.description,
+			name: fields.name,
 			status: '-',
-			department: ','
+			description: '-'
 		};
 
 		try {
-			const response = await createCostCenter(data, cookies.authToken);
+			const response = await createSupplier(data, cookies.authToken);
 
 			if (response.ok) {
 				handleClick();
 				return setPopupData({
 					open: true,
 					title: 'Sucesso!',
-					text: 'Centro de custo criado com sucesso.'
+					text: 'Fornecedor criado com sucesso.'
 				});
 			}
 
@@ -68,7 +68,7 @@ export default function CreateCostCenter ({ closeFunction }: CreateCostCenterPop
 			<form onSubmit={handleSubmit(getData)} className={Styles.Form}>
 				<header>
 					<h2>
-						Informe os dados do centro de custo
+						Informe os dados do fornecedor
 					</h2>		    
 					<Image
 						src='/images/icons/close.svg'
@@ -81,11 +81,11 @@ export default function CreateCostCenter ({ closeFunction }: CreateCostCenterPop
 				</header>
 				<main className={Styles.Main}>
 					<div className={Styles.LabelInputContainer}>
-						<label className={Styles.Label}>Nome do centro de custo</label>
+						<label className={Styles.Label}>Nome do fornecedor</label>
 						<input 
 							className={Styles.Input}
-							{...register('description')}
-							placeholder="Ex.: material de escritório"
+							{...register('name')}
+							placeholder="Ex.: fornecedor X"
 							required
 						/>
 					</div>

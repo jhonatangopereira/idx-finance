@@ -1,31 +1,3 @@
-import { api } from './api';
-
-type Payment = {
-    value: number,
-    payment_method: string,
-    due_date: string,
-    payment_date: string,
-    status: string,
-    installment: number
-}
-
-type DataType = {
-	supplier: string,
-	competence: string,
-	description: string,
-	value: number,
-	cost_center: number,
-	code: string,
-	observations: string,
-	status: string,
-	installment: number,
-	number_of_installments: number,
-	number_installments: number,
-	nsu: string,
-	financial_account: string,
-	payment: Payment
-}
-
 const createExpense = async (values: any, authToken: string) => {
     await fetch(`${"https://idxfinance.com.br"}/api/expenses/`, {
         method: 'POST',

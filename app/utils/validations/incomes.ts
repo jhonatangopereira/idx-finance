@@ -33,6 +33,10 @@ const createIncomeSchema = yup.object().shape({
         due_date: yup.string().required("Digite a data de vencimento."),
         value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
         payment_method: yup.string().required("Escolha a forma de pagamento."),
+        installment_values: yup.array().of(yup.object().shape({
+            due_date: yup.string().required("Digite a data de vencimento."),
+            value: yup.string().required("Digite um valor.")
+        })),
         status: yup.mixed().oneOf([yup.boolean(), yup.string(), "Recebido", undefined, true, false, ""]).nullable(),
         installment: yup.number().min(0, "Digite um valor positivo"),
     }),

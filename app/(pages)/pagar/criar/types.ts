@@ -1,10 +1,14 @@
+type Installment = {
+	value: number,
+	due_date: string
+}
 type Payment = {
-    value: number,
+	installment_values: Installment[],
     payment_method: string,
-    due_date: string,
     payment_date: string | null,
     status: string | boolean,
-    installment: number
+    installment: number,
+	bank_slip: boolean
 }
 
 type Apportionment = {
@@ -28,12 +32,13 @@ type DataType = {
 	number_of_installments: number,
 	nsu: string,
 	financial_account: string,
+	document_number: string,
 	payment: Payment,
 	financial_category: number,
 	category: number,
 	interval_between_installments: number,
 	apportionment: Apportionment[],
-	attachment: File | null | string 
+	attachment: File | null | string,
 }
 
 type FieldsType = {

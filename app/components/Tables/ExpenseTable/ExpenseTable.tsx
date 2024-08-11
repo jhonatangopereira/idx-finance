@@ -9,6 +9,11 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
     }
 
     if (data !== null) {
+        const sortedData = data.toSorted((a: Expense, b:Expense) => {
+            const order = ["Vencido", "À vencer", "Pago"];
+            return order.indexOf(a.status) - order.indexOf(b.status);
+        });
+
         const totalValue = data.reduce((current: number, account: Expense) => {
             current += Number(account.value);
             return current
@@ -78,7 +83,7 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                         </div>
                     </div>
                     <div className={Styles.TableContent}>
-                        {data.map((account: any, index: number) => (                            
+                        {sortedData.map((account: any, index: number) => (                            
                             <div key={index}>
                                 <AccountCard 
                                     description={account.description}
