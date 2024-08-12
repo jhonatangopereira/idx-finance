@@ -7,8 +7,7 @@ type Payment = {
     payment_method: string,
     payment_date: string | null,
     status: string | boolean,
-    installment: number,
-	bank_slip: boolean
+	number_of_installments: number,
 }
 
 type Apportionment = {
@@ -21,6 +20,7 @@ type Apportionment = {
 
 type DataType = {
 	supplier: string,
+	bank_slip: boolean,
 	competence: string,
 	description: string,
 	value: number,
@@ -28,8 +28,6 @@ type DataType = {
 	code: string,
 	observations: string,
 	status: string | boolean,
-	installment: number,
-	number_of_installments: number,
 	nsu: string,
 	financial_account: string,
 	document_number: string,

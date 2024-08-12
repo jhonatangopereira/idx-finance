@@ -29,15 +29,8 @@ const createExpenseSchema = yup.object().shape({
         then: (schema) => schema.min(1, "Selecione uma conta válida.").required("Escolha uma conta bancária."), 
         otherwise: (schema) => schema.nullable() 
     }),
-    interval_between_installments:
-    yup
-    .number()
-    .transform((value, originalValue) => (String(originalValue).trim() === '' ? null : value))
-    .typeError('Por favor, insira um número válido')
-    .min(0, 'Digite um valor positivo')
-    .required('Digite o número de dias.'),
+    bank_slip: yup.boolean(),
     payment: yup.object({
-        bank_slip: yup.boolean(),
         value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
         payment_method: yup.string()
             .when('status', {
@@ -50,9 +43,8 @@ const createExpenseSchema = yup.object().shape({
             due_date: yup.string().required("Digite a data de vencimento."),
             value: yup.string().required("Digite um valor.")
         })),
-        payment_date: yup.string(),
+        payment_date: yup.string().required("Digite a data de pagamento.").nullable(),
         status: yup.boolean(),
-        installment: yup.number().min(0, "Digite um valor positivo").required("Digite um valor."),
     }),
     apportionment: yup.array().of(yup.object().shape({
         reference_code: yup.string().nullable(),
