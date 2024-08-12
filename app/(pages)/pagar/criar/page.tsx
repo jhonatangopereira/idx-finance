@@ -13,7 +13,7 @@ import { DataType } from "./types";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { format } from "date-fns";
 import { parseCookies } from "nookies";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export default function CreateAccount() {

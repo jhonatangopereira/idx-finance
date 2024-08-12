@@ -235,6 +235,35 @@
   position: relative;
 }
 
+.PaymentTerms .LabelInputContainer div {
+    display: flex;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer {
+    flex-direction: column;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer button {
+    flex-grow: 1;
+    width: 30px;
+
+}
+
+.InstallmentInput .Input {
+  border-radius: 8px 0 0 8px;
+}
+
+.Icons {
+  display: flex;
+  flex-direction: column;
+}
+
+.Icons button {
+  flex-grow: 1;
+  width: 25px;
+}
+
+
 .ReceivedAndInformNsuContainer {
     gap: 32px;
     display: flex;
@@ -347,6 +376,29 @@
     left: 4px;  
     transition: .2s;
 }
+
+.AddProff {
+    position: relative;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.AddProff input {
+    position: absolute;
+    height: 70%;
+    width: 100%;
+    top: 0;
+    opacity: 0;
+}
+
+.AddProff a {
+    color: #007afd;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 .MarkAs {
     grid-area: paymentTermsMarkAs;
     display: flex;

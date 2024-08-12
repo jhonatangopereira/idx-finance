@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { parseCookies } from 'nookies';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
+import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
 type ApportionmentType =  {            
     reference_code: string,
@@ -27,16 +28,12 @@ type ApportionmentType =  {
 }     
 
 export default function Receita() {
-    const [apportionments, setApportionments] = useState<ApportionmentType[]>([{
-        reference_code: "",
-        financial_category: 0,
-        value: "",
-        percentage: "",
-        cost_center: 0
-    }]);
+    const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
     const ap = apportionments
+    const [numberOfInstallments, setNumberOfInstallments] = useState(2);
     const [hasInstallment, setHasInstallment] = useState(false);
     const paymentSelectedAccountRef = useRef<HTMLOptionElement>(null);
+    const [attachmentImageUrl, setAttachmentImageUrl] = useState('');
     const paymentAccountRef = useRef<HTMLSelectElement>(null);
     const [markAs, setMarkAs] = useState(false);    
     const { id } = useParams();        
@@ -54,8 +51,8 @@ export default function Receita() {
             alternative_due_date: hasInstallment ? "01/01/2024" : "",
             installment: 0,
             financial_account: 0,
-            number_of_installments: "2x",   
             payment: {
+                number_of_installments: "2x",   
                 interval_between_installments: hasInstallment ? 1 : 1,
                 value: "0",
                 payment_method: '',
@@ -77,6 +74,10 @@ export default function Receita() {
     const [userBanks, setUserBanks] = useState([
         { id: 0, bank_name: '' }
     ]);
+    const [attachmentStatus, setAttachment] = useState({
+        message: 'Nehum anexo adicionado.'
+    });
+    const attachment = watch('attachment');
     const [useCategories, setUserCategories] = useState([{ id: 0, description: '' }]);
     const [userCostCenters, setUserCostCenters] = useState([{ id: 0, description: '' }]);
     const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] = useState(false);
@@ -108,20 +109,27 @@ export default function Receita() {
 
         try {        
             const response = await getIncomeById(cookies.authToken, Number(id));
-            const data = await response.json();             
+            const data = await response.json(); 
+            console.log(data.status)
+            if (data.status !== 'Recebido') {                
+                setMarkAs(false);
+            } else if (data.status === "Recebido") {
+                setValue('payment.payment_date', data.payments[0].payment_date);
+                setMarkAs(true);
+            }
+
             setValue('client', data.client);
             setValue('competence', data.competence);
             setValue('description', data.description);
             setValue('_value', parseFloat(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));             
-            setValue('installment', data.payment[0].installment);
-            setValue('payment.value', parseFloat(data.payment[0].value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-            setValue('payment.due_date', data.payment[0].due_date);
-            setValue('alternative_due_date', data.payment[0].due_date);         
+            setValue('installment', data.payments[0].installment);
+            setValue('payment.value', parseFloat(data.payments[0].value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            setValue('payment.due_date', data.payments[0].due_date);
+            setValue('alternative_due_date', data.payments[0].due_date);         
             setValue('observations', data.observations);            
-            setValue('financial_account', data.payment[0].payment_account);            
-            setValue('payment.payment_date', data.payment[0].payment_date);
-            setValue('payment.payment_method', data.payment[0].payment_method);
-            setValue('payment.status', data.status);            
+            setValue('financial_account', data.payments[0].payment_account);            
+            setValue('payment.payment_method', data.payments[0].payment_method);
+            setValue('payment.status', data.status);   
             setValue('payment.interval_between_installments', data.interval_between_installments);
             setValue('cost_center', Number(data.cost_center));
             setValue('financial_category', data.financial_category);
@@ -142,21 +150,15 @@ export default function Receita() {
             if(!hasInstallment) {
                 setValue('alternative_due_date', data.payment[0].due_date)
             }
-
-            if (data.status !== 'Recebido') {                
-                setMarkAs(false);
-            } else if (data.status === "Recebido"){
-                setMarkAs(true);
-            }
-
+            
             if(data.value !== data.payment[0].value && data.interval_between_installments !== 0) {
                     setHasInstallment(true)
-                    setValue('number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
+                    setValue('payment.number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
 
                     if (data.value !== data.payment[0].value === data.payment) {
-                        setValue('number_of_installments', "2x")
+                        setValue('payment.number_of_installments', "2x")
                     } else {
-                        setValue('number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
+                        setValue('payment.number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
                     }
                 }
 
@@ -190,13 +192,13 @@ export default function Receita() {
             observations: fields.observations,
             status: fields.payment.status === false ? "" : "Recebido",
             installment: 1,
-            number_of_installments: hasInstallment ? Number(fields.number_of_installments.split("x")[0]) : 1,
-            nsu: "nsu",
             financial_category: fields.financial_category,
+            nsu: "nsu",
             category: fields.financial_category,
             cost_center: Number(fields.cost_center),
             financial_account: fields.financial_account,
             payment: {
+                number_of_installments: hasInstallment ? Number(fields.payment.number_of_installments.split("x")[0]) : 1,
                 interval_between_installments: hasInstallment ? Number(fields.payment.interval_between_installments) : 0,
                 value:  Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()) / (hasInstallment ? Number(number_of_installments.split("x")[0]) : 1),
                 payment_method: fields.payment.payment_method,
@@ -214,17 +216,46 @@ export default function Receita() {
                     value: parseFloat(a.value.replace(/\./g, '').replace(',', '.')),
                     reference_code: '-',
                 }
-            }) : []
+            }) : [],
+            attachment: ''
         };
 
+        console.log(data)
 
-       try {
+        const cookies = parseCookies();
+        if (fields.attachment.length > 0 ) {
+            const file = fields.attachment[0];
+            const reader = new FileReader();
+          
+            reader.onload = async (event) => {
+                if (event.target) {
+                    data.attachment = event.target.result as string;
+                }
+                try {
+                  await updateIncome(cookies.authToken, data, Number(id));
+                  alert('Nova despesa criada com sucesso!');
+                } catch (err) {
+                  alert('Falha ao criar a nova despesa.');
+                }
+            };
+              reader.readAsDataURL(file);
+        } else {
+              try {
+                await updateIncome(cookies.authToken, data, Number(id));
+                alert('Nova despesa criada com sucesso!');
+              } catch (err) {
+                alert('Falha ao criar a nova despesa.');
+            }
+        }
+
+
+      /* try {
             const cookies = parseCookies();
             await updateIncome(cookies.authToken, data, Number(id))
             alert('Receita atualizada.')
         } catch (err) {
             alert('Falha ao atualizar receita.')
-        }   
+        }    */
     } 
 
     const fetchBanks = async (authToken: string) => {
@@ -232,7 +263,7 @@ export default function Receita() {
 
         
        try {
-            await fetch(`${"https://idxfinance.com.br"}/api/release-options/`, {
+            await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/release-options/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -260,7 +291,7 @@ export default function Receita() {
     }, [])
 
     const _value = watch('_value');
-    const number_of_installments = watch('number_of_installments');
+    const number_of_installments = watch('payment.number_of_installments');
     const payment_status = watch('payment.status');
     const payment_due_date = watch('payment.due_date');
     const payment_date = watch('payment.payment_date');
@@ -354,7 +385,36 @@ export default function Receita() {
         return number;
     }
 
-    return (
+    const addInstallment = () => {
+        setNumberOfInstallments(previousValue => previousValue += 1);
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }
+
+    const removeInstallment = () => {
+        setNumberOfInstallments(previousValue => previousValue -= 1);
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }
+
+    const handleRemoveProof = () => {
+        setValue('attachment', null);
+    }
+
+    useEffect(() => {
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }, [numberOfInstallments]);
+
+    useEffect(() => {
+        if (attachment !== null && attachment !== undefined  && attachment.length > 0) {
+            setAttachment({ message: `Anexo já adicionado.` });
+        } else {
+            setValue('attachment', '');
+            setAttachment({ message: `Nenhum anexo adicionado.` });
+        }
+
+        setValue('competence', new Date().toISOString().split('T')[0])
+    }, [attachment, setValue]);
+
+   return (
         <>
             {isCreateCategoryPopupVisible && (
                 <div className="ModalBackground">
@@ -424,6 +484,7 @@ export default function Receita() {
                                         </div>
                                         {errors._value && <p className={Styles.Error}>{errors._value.message}</p>}
                                     </div>
+                                    {markAs && (<>
                                      <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Conta de recebimento <span className={Styles.AsterisckSpan}>*</span></label>
                                         <select className={Styles.Input} {...register("financial_account")}>
@@ -451,10 +512,20 @@ export default function Receita() {
                                         {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
                                     </div>
                                      <div className={Styles.LabelInputContainer}>
+                                        <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                        <input 
+                                            className={Styles.Input}
+                                            placeholder='Data de pagamento'
+                                            type='date'
+                                            {...register("payment.payment_date")}
+                                        />
+                                        {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
+                                    </div> </>)}
+                                     <div className={Styles.LabelInputContainer}>
                                                 <label className={Styles.Label}>Categoria <span className={Styles.AsterisckSpan}>*</span></label>
                                                 <select className={Styles.Input} {...register("financial_category")}>
                                                     <option value={0}>Selecione a categoria</option>  
-                                                        {useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                        {useCategories !== undefined && useCategories.length >= 1 && useCategories.map((category, index) => (
                                                             <option value={category.id} key={index}>{category.description}</option>
                                                         ))}                                        
                                                 </select>
@@ -469,7 +540,7 @@ export default function Receita() {
                                                 <label className={Styles.Label}>Centro de custo <span className={Styles.AsterisckSpan}>*</span></label>
                                                 <select className={Styles.Input} {...register("cost_center")}>
                                                 <option value={0} selected>Selecione o centro de custo</option>  
-                                                    {userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
+                                                    {userCostCenters !== undefined && userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
                                                         <option value={category.id} key={index}>{category.description}</option>
                                                     ))}
                                                 </select>
@@ -532,42 +603,16 @@ export default function Receita() {
                                     />*/}
                                 </section>
                                 <section>
-                                        <div className={Styles.ApportionmentInput}>
-                                            <span>Habilitar rateio</span>
-                                            <div>
-                                                <div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="apportionment" 
-                                                        id="yes" 
-                                                        onChange={(e) => { setIsApportionmentInputChecked(true)}}
-                                                        checked={isApportionmentInputChecked === true}
-                                                    />
-                                                    <label htmlFor="yes">Sim</label>
-                                                </div>
-                                                <div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="apportionment" 
-                                                        id="no"
-                                                        onChange={(e) => setIsApportionmentInputChecked(false)}
-                                                        checked={isApportionmentInputChecked === false}
-                                                    />
-                                                    <label htmlFor="no">Não</label>
-                                                </div>
-                                            </div>
-                                        </div>    
-                                            <button
-                                                className={Styles.AddApportionmentButton} 
-                                                type='button' 
-                                                onClick={addNewApportionment}
-                                            >
-                                                Adicionar novo rateio
-                                            </button>
+                                        <button
+                                            className={Styles.AddApportionmentButton} 
+                                            type='button' 
+                                            onClick={addNewApportionment}
+                                        >
+                                            {ap.length > 0 ? "Adicionar novo rateio" : "Adicionar Rateio"}
+                                        </button>
                                     </section>
-                                    {isApportionmentInputChecked === true && (
                                     <section className={Styles.Apportionment}>
-                                            <h3>Informe os dados do rateio</h3>
+                                            {ap.length > 0 && <h3>Informe os dados do rateio</h3>}
                                             <div id="container">
                                                 {ap.length > 0 && ap.map((apportionment, index) => (
                                                 <div className="ApportionmentsContainer" key={index} id={`apportionment-${index}`}>
@@ -668,14 +713,13 @@ export default function Receita() {
                                                     </button>
                                                     </div>
                                                     <div className={Styles.ApportionmentDetails}>
-                                                        <span>Valor rateado: <b>R${(transformStringToNumber(apportionments[index].value) * ((transformStringToNumber(apportionments[index].percentage)) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                                                        <span>A ratear: <b>R$ {(transformStringToNumber(apportionments[index].value) - (transformStringToNumber(apportionments[index].value) * (Number(parseFloat(apportionments[index].percentage).toFixed(2)) / 100))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({100 - Number(parseFloat(apportionments[index].percentage).toFixed(2))}%)</b></span>
+                                                        <span>Valor rateado: <b>{(transformStringToNumber(apportionments[index].value)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></span>
+                                                        <span>A ratear: <b>{(transformStringToNumber(_value || '') - (transformStringToNumber(apportionments[index].value))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) } ({100 - transformStringToNumber(apportionments[index].percentage)}%) </b></span>
                                                     </div> 
                                             </div>
                                             ))}
                                         </div>
                                     </section>
-                                )}
                                 {/*isApportionmentInputChecked === true && (
                                     <section className={Styles.Apportionment}>
                                             <h3>Informe os dados do rateio</h3>
@@ -719,18 +763,25 @@ export default function Receita() {
                                     <h2>Condições de recebimento</h2>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Parcelamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input
-                                            className={Styles.Input}
-                                            placeholder='Ex.: 3x'
-                                            type='text'          
-                                            id="installmentsIntervalInput"        
-                                            onMouseEnter={onInstallMentIntervalFielMouseEnter}
-                                            onMouseLeave={onInstallMentIntervalFielMouseLeave}                      
-                                            {...register("number_of_installments")}
-                                            min={0}
-                                            max={50}
-                                        />
-                                        {errors.number_of_installments && <p className={Styles.Error}>{errors.number_of_installments.message}</p>}
+                                         <div className={Styles.InstallmentInput}>
+                                            <input
+                                              className={Styles.Input}
+                                              placeholder='Ex.: 3x'
+                                              type='text'
+                                              id="installmentsIntervalInput"
+                                              {...register("payment.number_of_installments")}
+                                              min={2}
+                                           />
+                                          <div className={Styles.Icons}>
+                                            <button type="button" onClick={addInstallment}>
+                                              <IoMdArrowDropup />
+                                            </button>
+                                            <button type="button" onClick={removeInstallment}>
+                                             <IoMdArrowDropdown />
+                                            </button>
+                                          </div>
+                                         </div>
+                                        {errors.payment?.number_of_installments && <p className={Styles.Error}>{errors.payment.number_of_installments.message}</p>}
                                     </div> 
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Valor <span className={Styles.AsterisckSpan}>*</span></label>
@@ -757,16 +808,6 @@ export default function Receita() {
                                         />
                                         {errors.payment?.due_date && <p className={Styles.Error}>{errors.payment.due_date.message}</p>}
                                     </div>                                                             
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input 
-                                            className={Styles.Input}
-                                            placeholder='Data de pagamento'
-                                            type='date'
-                                            {...register("payment.payment_date")}
-                                        />
-                                        {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
-                                    </div>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>
                                             Intervalo entre parcelas 
@@ -798,7 +839,25 @@ export default function Receita() {
                                         </div>
                                     </div>*/}
                                 </section> 
-                                )}              
+                                )}        
+                                <section className={Styles.AddProff}>
+                                       <button className={Styles.AddApportionmentButton}>
+                                           Adicionar anexo
+                                       </button>
+                                       <input
+                                           type="file"       
+                                           id="file"                                    
+                                           {...register('attachment')}
+                                       />
+                                       <p>{attachmentStatus.message}</p>
+                                        {attachment !== '' && (
+                                            <a                                            
+                                               onClick={handleRemoveProof}                                           
+                                            >
+                                               - Remover anexo
+                                            </a> 
+                                        )}
+                                </section>      
                                  <section>
                                     <div className={Styles.MarkAs}>
                                         <span>Marcar como</span>

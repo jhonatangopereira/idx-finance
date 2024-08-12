@@ -1,14 +1,14 @@
 'use client'
 
-import Styles from '@/app/page.module.css';
-import ExpenseTable from '@/app/components/Tables/ExpenseTable/ExpenseTable';
 import ExportXlsx from '@/app/components/Buttons/import-expenses';
+import ExpenseTable from '@/app/components/Tables/ExpenseTable/ExpenseTable';
 import withAuth from '@/app/components/withAuth';
-import { DataItem, ApiResponse, Expense } from './types';
+import Styles from '@/app/page.module.css';
 import { getAllExpenses } from '../../services/api/expenses';
+import { ApiResponse, Expense } from './types';
 
 import { parseCookies } from 'nookies';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const Pagar = () => {
 

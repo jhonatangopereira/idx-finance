@@ -11,6 +11,7 @@ import MessagePopup from '../../../components/MessagePopup/MessagePopup';
 import { createIncomeSchema } from '../../../utils/validations/incomes';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import { formatFields } from '../utils';
 
 import { useState, useCallback, useMemo, FormEvent, useEffect, ChangeEvent } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -18,6 +19,7 @@ import { useParams } from 'next/navigation';
 import { parseCookies } from 'nookies'
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
+import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
 type ApportionmentType =  {            
     reference_code: string,
@@ -29,10 +31,11 @@ type ApportionmentType =  {
 
 export default function CriarReceita() {
     const [hasInstallment, setHasInstallment] = useState(false);
-    const [apportionments, setApportionments] = useState<ApportionmentType[]>([
-    ]);
+    const [numberOfInstallments, setNumberOfInstallments] = useState(2);
+    const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
     const ap = apportionments
-    const [apportionmentsNumber, setApportionmentsNumber] = useState(1)
+    const [apportionmentsNumber, setApportionmentsNumber] = useState(1);
+    const cookies = parseCookies();
     const { id } = useParams();    
     const { register, handleSubmit, formState: { errors }, watch, setValue, resetField } = useForm({
         resolver: yupResolver(createIncomeSchema),
@@ -41,10 +44,11 @@ export default function CriarReceita() {
             alternative_due_date: hasInstallment ? "01/01/2024" : "",
             installment: 0,
             financial_account: 0,
-            number_of_installments: "2x",                  
+            attachment: '',            
             cost_center: 0,  
             financial_category: 0,
             payment: {
+                number_of_installments: "2x",                  
                 interval_between_installments: hasInstallment ? 1 : 1,
                 payment_date:  hasInstallment ? '' : '01/01/2024',
                 due_date: hasInstallment ? '' : '01/01/2024',
@@ -68,6 +72,11 @@ export default function CriarReceita() {
     const [isApportionmentInputChecked, setIsApportionmentInputChecked] = useState(false);
     const [totalValue, setTotalValue] = useState(0);
     const [markAs, setMarkAs] = useState(false);    
+    const [attachmentStatus, setAttachment] = useState({
+        message: 'Nehum anexo adicionado.'
+    });
+    const paymentStatus = watch('payment.status')
+    const attachment = watch('attachment');
     const [percentage, setPercentage] = useState(0);
     const [userBanks, setUserBanks] = useState([
         { id: 0, bank_name: '' }
@@ -96,45 +105,11 @@ export default function CriarReceita() {
         totalValue - apportionmentValue
     ), [totalValue, apportionmentValue]);
 
-    const getFields = async (fields: any) => {    
-        const data = {
-            client: fields.client,
-             competence: format(new Date(fields.competence + 'T00:00:00'), 'dd/MM/yyyy'),
-            description: fields.description,
-            value: Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
-            code: "code",
-            observations: fields.observations,
-            status: fields.payment.status === false ? null : fields.payment.status,
-            installment: 1,
-            number_of_installments: hasInstallment ? Number(fields.number_of_installments.split("x")[0]) : 1,
-            nsu: "nsu",
-            financial_category: fields.financial_category,
-            category: fields.financial_category,
-            cost_center: Number(fields.cost_center),
-            financial_account: fields.financial_account,
-            payment: {
-                interval_between_installments: hasInstallment ? Number(fields.payment.interval_between_installments) : 0,
-                value: Number(parseFloat(fields.payment.value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
-                payment_method: fields.payment.payment_method,
-                due_date: hasInstallment ? format(new Date(fields.payment.due_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                payment_date: hasInstallment ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                status: fields.payment.status === false ? null : fields.payment.status,
-                installment: 1,
-            },
-            apportionment: isApportionmentInputChecked ? apportionments.map((a) => { 
-                return {
-                    financial_category: a.financial_category,
-                    cost_center: Number(a.cost_center),
-                    percentage: parseFloat(a.percentage.replace(",", ".")),
-                    value: Number(parseFloat(a.value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()),
-                    reference_code: '-',
-                }
-            }) : []
-        };
-                
+    const getFields = async (fields: any) => {
+        const formatedFields = formatFields(fields, hasInstallment, apportionments);
+
         try {
-            const cookies = parseCookies();
-            await createIncome(cookies.authToken, data)
+            await createIncome(cookies.authToken, formatedFields)
             .then(response => response.json())
             .then(data => { 
                 setPopUpData({
@@ -142,18 +117,14 @@ export default function CriarReceita() {
                     title: 'Nova receita criada com sucesso!', 
                     text: 'Confira ela e seus detalhes na página "receitas"' 
                 });
-
-                //setTimeout(() => { window.location.href="/receber" }, 3000)
             })
             .catch(() => setPopUpData({ 
                 open: true,
                 title: 'Ops, algo deu errado.', 
                 text: 'Falha ao criar a receita. Tente novamente mais tarde.' 
             })) 
-            console.log(data)  
-            
         } catch (err) {
-            setPopUpData({ 
+          setPopUpData({ 
                 open: true,
                 title: 'Ops, algo deu errado.', 
                 text: 'Falha ao criar a receita. Tente novamente mais tarde.' 
@@ -186,7 +157,7 @@ export default function CriarReceita() {
 
 
     const _value = watch('_value');
-    const number_of_installments = watch('number_of_installments');
+    const number_of_installments = watch('payment.number_of_installments');
     const payment_status = watch('payment.status');
     const payment_due_date = watch('payment.due_date');    
 
@@ -227,7 +198,7 @@ export default function CriarReceita() {
 
     useEffect(() => {        
         if (payment_status) {
-            setValue('payment.payment_date', payment_due_date)
+            setValue('payment.payment_date', payment_due_date!)
         }        
     }, [payment_status, payment_due_date])
 
@@ -277,7 +248,36 @@ export default function CriarReceita() {
         return number;
     }
 
- return (
+    const handleRemoveProof = () => {
+        setValue('attachment', null);
+    }
+
+    useEffect(() => {
+        if (attachment !== null && attachment.length > 0) {
+            setAttachment({ message: `Anexo adicionado: ${attachment[0].name}` });
+        } else {
+            setValue('attachment', '');
+            setAttachment({ message: `Nenhum anexo adicionado.` });
+        }
+
+        setValue('competence', new Date().toISOString().split('T')[0])
+    }, [attachment, setValue]);
+
+    const addInstallment = () => {
+        setNumberOfInstallments(previousValue => previousValue += 1);
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }
+
+    const removeInstallment = () => {
+        setNumberOfInstallments(previousValue => previousValue -= 1);
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }
+
+    useEffect(() => {
+        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+    }, [numberOfInstallments]);
+
+    return (
         <>
             {isCreateCategoryPopupVisible && (
                 <div className="ModalBackground">
@@ -347,6 +347,7 @@ export default function CriarReceita() {
                                         </div>
                                         {errors._value && <p className={Styles.Error}>{errors._value.message}</p>}
                                     </div>
+                                    {markAs && (<>
                                      <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Conta de recebimento <span className={Styles.AsterisckSpan}>*</span></label>
                                         <select className={Styles.Input} {...register("financial_account")}>
@@ -374,10 +375,20 @@ export default function CriarReceita() {
                                         {errors.payment?.payment_method && <p className={Styles.Error}>{errors.payment.payment_method.message}</p>}
                                     </div>
                                      <div className={Styles.LabelInputContainer}>
+                                        <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
+                                        <input 
+                                            className={Styles.Input}
+                                            placeholder='Data de pagamento'
+                                            type='date'
+                                            {...register("payment.payment_date")}
+                                        />
+                                        {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
+                                    </div> </>)}
+                                     <div className={Styles.LabelInputContainer}>
                                                 <label className={Styles.Label}>Categoria <span className={Styles.AsterisckSpan}>*</span></label>
                                                 <select className={Styles.Input} {...register("financial_category")}>
                                                     <option value={0}>Selecione a categoria</option>  
-                                                        {useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                        {useCategories !== undefined && useCategories.length >= 1 && useCategories.map((category, index) => (
                                                             <option value={category.id} key={index}>{category.description}</option>
                                                         ))}                                        
                                                 </select>
@@ -392,7 +403,7 @@ export default function CriarReceita() {
                                                 <label className={Styles.Label}>Centro de custo <span className={Styles.AsterisckSpan}>*</span></label>
                                                 <select className={Styles.Input} {...register("cost_center")}>
                                                 <option value={0} selected>Selecione o centro de custo</option>  
-                                                    {userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
+                                                    {userCostCenters !== undefined && userCostCenters.length >= 1 && userCostCenters.map((category, index) => (
                                                         <option value={category.id} key={index}>{category.description}</option>
                                                     ))}
                                                 </select>
@@ -455,42 +466,16 @@ export default function CriarReceita() {
                                     />*/}
                                 </section>
                                 <section>
-                                        <div className={Styles.ApportionmentInput}>
-                                            <span>Habilitar rateio</span>
-                                            <div>
-                                                <div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="apportionment" 
-                                                        id="yes" 
-                                                        onChange={(e) => { setIsApportionmentInputChecked(true)}}
-                                                        checked={isApportionmentInputChecked === true}
-                                                    />
-                                                    <label htmlFor="yes">Sim</label>
-                                                </div>
-                                                <div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="apportionment" 
-                                                        id="no"
-                                                        onChange={(e) => setIsApportionmentInputChecked(false)}
-                                                        checked={isApportionmentInputChecked === false}
-                                                    />
-                                                    <label htmlFor="no">Não</label>
-                                                </div>
-                                            </div>
-                                        </div>    
-                                            <button
-                                                className={Styles.AddApportionmentButton} 
-                                                type='button' 
-                                                onClick={addNewApportionment}
-                                            >
-                                                Adicionar novo rateio
-                                            </button>
+                                        <button
+                                            className={Styles.AddApportionmentButton} 
+                                            type='button' 
+                                            onClick={addNewApportionment}
+                                        >
+                                            {ap.length > 0 ? "Adicionar novo rateio" : "Adicionar Rateio"}
+                                        </button>
                                     </section>
-                                    {isApportionmentInputChecked === true && (
                                     <section className={Styles.Apportionment}>
-                                            <h3>Informe os dados do rateio</h3>
+                                            {ap.length > 0 && <h3>Informe os dados do rateio</h3>}
                                             <div id="container">
                                                 {ap.length > 0 && ap.map((apportionment, index) => (
                                                 <div className="ApportionmentsContainer" key={index} id={`apportionment-${index}`}>
@@ -591,14 +576,13 @@ export default function CriarReceita() {
                                                     </button>
                                                     </div>
                                                     <div className={Styles.ApportionmentDetails}>
-                                                        <span>Valor rateado: <b>R${(transformStringToNumber(apportionments[index].value) * ((transformStringToNumber(apportionments[index].percentage)) / 100)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                                                        <span>A ratear: <b>R$ {(transformStringToNumber(apportionments[index].value) - (transformStringToNumber(apportionments[index].value) * (Number(parseFloat(apportionments[index].percentage).toFixed(2)) / 100))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({100 - Number(parseFloat(apportionments[index].percentage).toFixed(2))}%)</b></span>
+                                                        <span>Valor rateado: <b>{(transformStringToNumber(apportionments[index].value)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></span>
+                                                        <span>A ratear: <b>{(transformStringToNumber(_value || '') - (transformStringToNumber(apportionments[index].value))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) } ({100 - transformStringToNumber(apportionments[index].percentage)}%) </b></span>
                                                     </div> 
                                             </div>
                                             ))}
                                         </div>
                                     </section>
-                                )}
                                 {/*isApportionmentInputChecked === true && (
                                     <section className={Styles.Apportionment}>
                                             <h3>Informe os dados do rateio</h3>
@@ -642,18 +626,25 @@ export default function CriarReceita() {
                                     <h2>Condições de recebimento</h2>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Parcelamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input
-                                            className={Styles.Input}
-                                            placeholder='Ex.: 3x'
-                                            type='text'          
-                                            id="installmentsIntervalInput"        
-                                            onMouseEnter={onInstallMentIntervalFielMouseEnter}
-                                            onMouseLeave={onInstallMentIntervalFielMouseLeave}                      
-                                            {...register("number_of_installments")}
-                                            min={0}
-                                            max={50}
-                                        />
-                                        {errors.number_of_installments && <p className={Styles.Error}>{errors.number_of_installments.message}</p>}
+                                         <div className={Styles.InstallmentInput}>
+                                            <input
+                                              className={Styles.Input}
+                                              placeholder='Ex.: 3x'
+                                              type='text'
+                                              id="installmentsIntervalInput"
+                                              {...register("payment.number_of_installments")}
+                                              min={2}
+                                           />
+                                          <div className={Styles.Icons}>
+                                            <button type="button" onClick={addInstallment}>
+                                              <IoMdArrowDropup />
+                                            </button>
+                                            <button type="button" onClick={removeInstallment}>
+                                             <IoMdArrowDropdown />
+                                            </button>
+                                          </div>
+                                         </div>
+                                        {errors.payment?.number_of_installments && <p className={Styles.Error}>{errors.payment.number_of_installments.message}</p>}
                                     </div> 
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Valor <span className={Styles.AsterisckSpan}>*</span></label>
@@ -680,16 +671,6 @@ export default function CriarReceita() {
                                         />
                                         {errors.payment?.due_date && <p className={Styles.Error}>{errors.payment.due_date.message}</p>}
                                     </div>                                                             
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Data de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input 
-                                            className={Styles.Input}
-                                            placeholder='Data de pagamento'
-                                            type='date'
-                                            {...register("payment.payment_date")}
-                                        />
-                                        {errors.payment?.payment_date && <p className={Styles.Error}>{errors.payment.payment_date.message}</p>}
-                                    </div>
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>
                                             Intervalo entre parcelas 
@@ -721,7 +702,25 @@ export default function CriarReceita() {
                                         </div>
                                     </div>*/}
                                 </section> 
-                                )}              
+                                )}        
+                                <section className={Styles.AddProff}>
+                                       <button className={Styles.AddApportionmentButton}>
+                                           Adicionar anexo
+                                       </button>
+                                       <input
+                                           type="file"       
+                                           id="file"                                    
+                                           {...register('attachment')}
+                                       />
+                                       <p>{attachmentStatus.message}</p>
+                                        {attachment !== '' && (
+                                            <a                                            
+                                               onClick={handleRemoveProof}                                           
+                                            >
+                                               - Remover anexo
+                                            </a> 
+                                        )}
+                                </section>      
                                  <section>
                                     <div className={Styles.MarkAs}>
                                         <span>Marcar como</span>
@@ -729,7 +728,6 @@ export default function CriarReceita() {
                                             <input 
                                                 type="checkbox" 
                                                 id="receveid"
-                                                checked={markAs}
                                                 {...register("payment.status")}
                                                 onChange={() => setMarkAs(previousValue => !previousValue)}
                                             />

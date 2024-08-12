@@ -10,18 +10,25 @@ const createIncomeSchema = yup.object().shape({
     cost_center: yup.number().min(1, 'Escolha o centro de custo.').required("Digite o centro de custo."),
     code: yup.string(),
     observations: yup.string().nullable(),
-    status: yup.mixed().oneOf([yup.boolean(), yup.string(), "Recebido", undefined, true, false, ""]).nullable(),
+    status: yup.boolean().nullable(),
     installment: yup.number().min(0, "Digite um valor positivo"),    
-    number_of_installments:
-        yup
-        .string()
-        .transform((value, originalValue) => (String(originalValue).trim() === '' ? null : value))
-        .typeError('Por favor, insira um número válido.')
-        .matches(/^\d+x?$/, 'Digite um valor válido.')
-        .required('Digite o número de parcelas.'),
+    attachment: yup.mixed(),
     nsu: yup.string(),
-    financial_account: yup.number().min(1, "Escolha um banco válido."),
+    financial_account: yup
+        .number()
+        .when('payment.status', {
+            is: (status: boolean) => status === true, 
+            then: (schema) => schema.min(1, "Selecione uma conta válida.").required("Escolha uma conta bancária."), 
+            otherwise: (schema) => schema.nullable() 
+    }),
     payment: yup.object({
+        number_of_installments:
+            yup
+            .string()
+            .transform((value, originalValue) => (String(originalValue).trim() === '' ? null : value))
+            .typeError('Por favor, insira um número válido.')
+            .matches(/^\d+x?$/, 'Digite um valor válido.')
+            .required('Digite o número de parcelas.'),
         interval_between_installments:
             yup
             .number()
@@ -32,12 +39,13 @@ const createIncomeSchema = yup.object().shape({
         payment_date: yup.string().required("Digite a data de pagamento."),
         due_date: yup.string().required("Digite a data de vencimento."),
         value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
-        payment_method: yup.string().required("Escolha a forma de pagamento."),
-        installment_values: yup.array().of(yup.object().shape({
-            due_date: yup.string().required("Digite a data de vencimento."),
-            value: yup.string().required("Digite um valor.")
-        })),
-        status: yup.mixed().oneOf([yup.boolean(), yup.string(), "Recebido", undefined, true, false, ""]).nullable(),
+         payment_method: yup.string()
+            .when('status', {
+                is: (status: boolean) => status === true,
+                then: (schema) => schema.required("Escolha a forma de pagamento.").test('not-empty', 'A forma de pagamento não pode ser vazia', value => value.trim() !== ''),
+                otherwise: (schema) => schema.nullable()
+        }),
+        status: yup.boolean().nullable(),
         installment: yup.number().min(0, "Digite um valor positivo"),
     }),
     apportionment: yup.array(yup.object({
