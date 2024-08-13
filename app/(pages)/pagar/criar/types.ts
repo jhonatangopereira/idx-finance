@@ -7,7 +7,6 @@ type Payment = {
     payment_method: string,
     payment_date: string | null,
     status: string | boolean,
-	number_of_installments: number,
 }
 
 type Apportionment = {
@@ -36,7 +35,7 @@ type DataType = {
 	category: number,
 	interval_between_installments: number,
 	apportionment: Apportionment[],
-	attachment: File | null | string,
+	attachment: File | null | string | ArrayBuffer
 }
 
 type FieldsType = {

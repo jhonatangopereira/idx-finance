@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { parseCookies } from "nookies";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
 export default function CreateAccount() {
   const [hasInstallment, setHasInstallment] = useState(false);
@@ -37,7 +38,6 @@ export default function CreateAccount() {
       installment: 0,
       bank_slip: hasBankSlip,
       financial_account: 0,
-      number_of_installments: "2x",
       financial_category: 0,
       cost_center: 0,
       attachment: "",
@@ -62,10 +62,7 @@ export default function CreateAccount() {
       ],
     },
   });
-  const [isApportionmentInputChecked, setIsApportionmentInputChecked] =
-    useState(false);
-  const [totalValue, setTotalValue] = useState(0);
-  const [percentage, setPercentage] = useState(0);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
   const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] =
     useState(false);
   const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] =
@@ -78,8 +75,9 @@ export default function CreateAccount() {
   const paymentStatus = watch("payment.status");
 
   const getData = async (fields: any) => {
+    const formData = new FormData();
     const cookies = parseCookies();
-    console.log(fields);
+
     const data: DataType = {
       supplier: fields.supplier,
       competence: format(
@@ -101,14 +99,9 @@ export default function CreateAccount() {
       cost_center: Number(fields.cost_center),
       document_number: fields.document_number,  
       financial_account: paymentStatus ? fields.financial_account : null,
-      interval_between_installments: hasInstallment
-        ? fields.interval_between_installments
-        : 0,
+      interval_between_installments: 0,
       bank_slip: fields.bank_slip,
       payment: {
-        number_of_installments: hasInstallment
-          ? Number(fields.number_of_installments.split("x")[0])
-          : 1,
         payment_method: paymentStatus ? fields.payment.payment_method : null,
         payment_date: paymentStatus
           ? format(
@@ -128,7 +121,7 @@ export default function CreateAccount() {
                     .toString()
                 ),
                 due_date: format(
-                  new Date(installment.payment + "T00:00:00"),
+                  new Date(installment.due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
               };
@@ -147,28 +140,28 @@ export default function CreateAccount() {
               },
             ],
       },
-      apportionment: isApportionmentInputChecked
-        ? apportionments.map((a) => {
-            return {
-              financial_category: a.financial_category,
-              cost_center: Number(a.cost_center),
-              percentage: Number(
-                parseFloat(a.percentage.replace(/\./g, "").replace(",", "."))
-                  .toFixed(2)
-                  .toString()
-              ),
-              value: Number(
-                parseFloat(a.value.replace(/\./g, "").replace(",", "."))
-                  .toFixed(2)
-                  .toString()
-              ),
-              reference_code: "-",
-            };
-          })
-        : [],
+      apportionment:
+        apportionments.length > 0
+          ? apportionments.map((a) => {
+              return {
+                financial_category: a.financial_category,
+                cost_center: Number(a.cost_center),
+                percentage: Number(
+                  parseFloat(a.percentage.replace(/\./g, "").replace(",", "."))
+                    .toFixed(2)
+                    .toString()
+                ),
+                value: Number(
+                  parseFloat(a.value.replace(/\./g, "").replace(",", "."))
+                    .toFixed(2)
+                    .toString()
+                ),
+                reference_code: "-",
+              };
+            })
+          : [],
       attachment: "",
     };
-    console.log(data);
 
     if (fields.attachment.length > 0) {
       const file = fields.attachment[0];
@@ -177,13 +170,13 @@ export default function CreateAccount() {
       reader.onload = async (event) => {
         if (event.target) {
           data.attachment = event.target.result as string;
+        }
 
-          try {
-            await createExpense(data, cookies.authToken);
-            alert("Nova despesa criada com sucesso!");
-          } catch (err) {
-            alert("Falha ao criar a nova despesa.");
-          }
+        try {
+          await createExpense(data, cookies.authToken);
+          alert("Nova despesa criada com sucesso!");
+        } catch (err) {
+          alert("Falha ao criar a nova despesa.");
         }
       };
       reader.readAsDataURL(file);
@@ -234,11 +227,10 @@ export default function CreateAccount() {
   }, [isCreateCategoryPopupVisible, isCostCenterPopupVisibe]);
 
   const _value = watch("_value");
-  const number_of_installments = watch("number_of_installments");
 
   useEffect(() => {
-    let value = (
-      stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])
+    let value = Number(
+      stringToCurrency(_value!)
     )
       .toFixed(2)
       .toString()
@@ -248,7 +240,7 @@ export default function CreateAccount() {
       maximumFractionDigits: 2,
     });
     setValue("payment.value", formattedValue);
-  }, [_value, number_of_installments, setValue]);
+  }, [_value, setValue]);
 
   useEffect(() => {
     if (hasInstallment) {
@@ -273,6 +265,8 @@ export default function CreateAccount() {
       setValue("attachment", "");
       setAttachment({ message: `Nenhum anexo adicionado.` });
     }
+
+    setValue("competence", new Date().toISOString().split("T")[0]);
   }, [attachment, setValue]);
 
   const addNewApportionment = () => {
@@ -353,6 +347,26 @@ export default function CreateAccount() {
   const handleRemoveProof = () => {
     setValue("attachment", null);
   };
+
+  const addInstallment = () => {
+    if (numberOfInstallments < 12) {
+      console.log("ADICIONAR PARCELAMENTO");
+      setNumberOfInstallments((previousValue) => previousValue + 1);
+      setValue("number_of_installments", `${numberOfInstallments}x`);
+    }
+  };
+  
+  const removeInstallment = () => {
+    if (numberOfInstallments > 2) {
+      console.log("DIMINUIR PARCELAMENTO");
+      setNumberOfInstallments((previousValue) => previousValue - 1);
+      setValue("number_of_installments", `${numberOfInstallments}x`);
+    }
+  };
+
+  useEffect(() => {
+    setValue("number_of_installments", `${numberOfInstallments}x`);
+  }, [numberOfInstallments]);
 
   return (
     <>
@@ -660,16 +674,24 @@ export default function CreateAccount() {
                         Parcelamento{" "}
                         <span className={Styles.AsterisckSpan}>*</span>
                       </label>
-                      <input
-                        className={Styles.Input}
-                        placeholder="Ex.: 3x"
-                        type="text"
-                        id="installmentsIntervalInput"
-                        onMouseEnter={onInstallMentIntervalFielMouseEnter}
-                        onMouseLeave={onInstallMentIntervalFielMouseLeave}
-                        {...register("number_of_installments")}
-                        min={2}
-                      />
+                      <div className={Styles.InstallmentInput}>
+                        <input
+                          className={Styles.Input}
+                          placeholder="Ex.: 3x"
+                          type="text"
+                          id="installmentsIntervalInput"
+                          {...register("number_of_installments")}
+                          min={2}
+                        />
+                        <div className={Styles.Icons}>
+                          <button type="button" onClick={addInstallment}>
+                            <IoMdArrowDropup />
+                          </button>
+                          <button type="button" onClick={removeInstallment}>
+                            <IoMdArrowDropdown />
+                          </button>
+                        </div>
+                      </div>
                       {errors.number_of_installments && (
                         <p className={Styles.Error}>
                           {errors.number_of_installments.message}
@@ -743,206 +765,102 @@ export default function CreateAccount() {
                   </section>
                 )}
                 <section>
-                  <div className={Styles.ApportionmentInput}>
-                    <span>Habilitar rateio</span>
-                    <div>
-                      <div>
-                        <input
-                          type="radio"
-                          name="apportionment"
-                          id="yes"
-                          onChange={(e) => {
-                            setIsApportionmentInputChecked(true);
-                          }}
-                          checked={isApportionmentInputChecked === true}
-                        />
-                        <label htmlFor="yes">Sim</label>
-                      </div>
-                      <div>
-                        <input
-                          type="radio"
-                          name="apportionment"
-                          id="no"
-                          onChange={(e) =>
-                            setIsApportionmentInputChecked(false)
-                          }
-                          checked={isApportionmentInputChecked === false}
-                        />
-                        <label htmlFor="no">Não</label>
-                      </div>
-                    </div>
-                  </div>
                   <button
                     className={Styles.AddApportionmentButton}
                     type="button"
                     onClick={addNewApportionment}
                   >
-                    Adicionar novo rateio
+                    {ap.length > 0
+                      ? "Adicionar novo rateio"
+                      : "Adicionar Rateio"}
                   </button>
                 </section>
-                {isApportionmentInputChecked === true && (
-                  <section className={Styles.Apportionment}>
-                    <h3>Informe os dados do rateio</h3>
-                    <div id="container">
-                      {ap.length > 0 &&
-                        ap.map((apportionment, index) => (
-                          <div
-                            className="ApportionmentsContainer"
-                            key={index}
-                            id={`apportionment-${index}`}
-                          >
-                            <div className={Styles.ApportionmentInputs}>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Categoria{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <select
-                                  className={Styles.Input}
-                                  {...register(
-                                    `apportionment.${index}.financial_category`
-                                  )}
-                                  onChange={(e) =>
-                                    setApportionments((prevApportionments) =>
-                                      prevApportionments.map(
-                                        (apportionment, i) => {
-                                          return i === index
-                                            ? {
-                                                ...apportionment,
-                                                financial_category:
-                                                  e.target.value,
-                                              }
-                                            : apportionment;
-                                        }
-                                      )
-                                    )
-                                  }
-                                >
-                                  <option value={0}>
-                                    Selecione a categoria
-                                  </option>
-                                  {useCategories !== undefined &&
-                                    useCategories.length >= 1 &&
-                                    useCategories.map((category, index) => (
-                                      <option value={category.id} key={index}>
-                                        {category.description}
-                                      </option>
-                                    ))}
-                                </select>
-                                {errors.apportionment?.[index]
-                                  ?.financial_category && (
-                                  <p className={Styles.Error}>
-                                    {
-                                      errors.apportionment[index]
-                                        ?.financial_category?.message
-                                    }
-                                  </p>
+                <section className={Styles.Apportionment}>
+                  {ap.length > 0 && <h3>Informe os dados do rateio</h3>}
+                  <div id="container">
+                    {ap.length > 0 &&
+                      ap.map((apportionment, index) => (
+                        <div
+                          className="ApportionmentsContainer"
+                          key={index}
+                          id={`apportionment-${index}`}
+                        >
+                          <div className={Styles.ApportionmentInputs}>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Categoria{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <select
+                                className={Styles.Input}
+                                {...register(
+                                  `apportionment.${index}.financial_category`
                                 )}
-                              </div>
+                                onChange={(e) =>
+                                  setApportionments((prevApportionments) =>
+                                    prevApportionments.map(
+                                      (apportionment, i) => {
+                                        return i === index
+                                          ? {
+                                              ...apportionment,
+                                              financial_category:
+                                                e.target.value,
+                                            }
+                                          : apportionment;
+                                      }
+                                    )
+                                  )
+                                }
+                              >
+                                <option value={0}>Selecione a categoria</option>
+                                {useCategories.length >= 1 &&
+                                  useCategories.map((category, index) => (
+                                    <option value={category.id} key={index}>
+                                      {category.description}
+                                    </option>
+                                  ))}
+                              </select>
+                              {errors.apportionment?.[index]
+                                ?.financial_category && (
+                                <p className={Styles.Error}>
+                                  {
+                                    errors.apportionment[index]
+                                      ?.financial_category?.message
+                                  }
+                                </p>
+                              )}
+                            </div>
 
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Valor total
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <div className={Styles.ValueInput}>
-                                  <div>
-                                    <span>R$</span>
-                                    <input
-                                      className={Styles.Input}
-                                      placeholder="Ex.: 100,00"
-                                      type="text"
-                                      value={apportionment.value}
-                                      {...register(
-                                        `apportionment.${index}.value`
-                                      )}
-                                      onChange={(e) =>
-                                        setApportionments(
-                                          (prevApportionments) =>
-                                            prevApportionments.map(
-                                              (apportionment, i) => {
-                                                return i === index
-                                                  ? {
-                                                      ...apportionment,
-                                                      value: formatCurrency(
-                                                        e.target.value.replace(
-                                                          /\D/g,
-                                                          ""
-                                                        )
-                                                      ).toString(),
-                                                      percentage: (
-                                                        (transformStringToNumber(
-                                                          formatCurrency(
-                                                            e.target.value.replace(
-                                                              /\D/g,
-                                                              ""
-                                                            )
-                                                          ).toString()
-                                                        ) /
-                                                          transformStringToNumber(
-                                                            _value!
-                                                          )) *
-                                                          100 || 0
-                                                      ).toLocaleString(
-                                                        "pt-BR",
-                                                        {
-                                                          minimumFractionDigits: 2,
-                                                          maximumFractionDigits: 2,
-                                                        }
-                                                      ),
-                                                    }
-                                                  : apportionment;
-                                              }
-                                            )
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                  {errors.apportionment?.[index]?.value && (
-                                    <p className={Styles.Error}>
-                                      {
-                                        errors.apportionment[index]?.value
-                                          ?.message
-                                      }
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Porcentagem{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <div className={Styles.ValueInput}>
-                                  <span>%</span>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Valor total
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <div className={Styles.ValueInput}>
+                                <div>
+                                  <span>R$</span>
                                   <input
                                     className={Styles.Input}
-                                    placeholder="Ex.: 10"
+                                    placeholder="Ex.: 100,00"
                                     type="text"
+                                    value={apportionment.value}
                                     {...register(
-                                      `apportionment.${index}.percentage`
+                                      `apportionment.${index}.value`
                                     )}
-                                    value={apportionment.percentage}
                                     onChange={(e) =>
                                       setApportionments((prevApportionments) =>
                                         prevApportionments.map(
                                           (apportionment, i) => {
-                                            handle_PercentageInputChange(
-                                              e,
-                                              index
-                                            );
-                                            console.log(e.target.value);
                                             return i === index
                                               ? {
                                                   ...apportionment,
-                                                  percentage: e.target.value,
-                                                  value: (
+                                                  value: formatCurrency(
+                                                    e.target.value.replace(
+                                                      /\D/g,
+                                                      ""
+                                                    )
+                                                  ).toString(),
+                                                  percentage: (
                                                     (transformStringToNumber(
                                                       formatCurrency(
                                                         e.target.value.replace(
@@ -951,15 +869,10 @@ export default function CreateAccount() {
                                                         )
                                                       ).toString()
                                                     ) /
-                                                      100) *
-                                                    transformStringToNumber(
-                                                      formatCurrency(
-                                                        _value!.replace(
-                                                          /\D/g,
-                                                          ""
-                                                        )
-                                                      ).toString()
-                                                    )
+                                                      transformStringToNumber(
+                                                        _value!
+                                                      )) *
+                                                      100 || 0
                                                   ).toLocaleString("pt-BR", {
                                                     minimumFractionDigits: 2,
                                                     maximumFractionDigits: 2,
@@ -971,109 +884,168 @@ export default function CreateAccount() {
                                       )
                                     }
                                   />
-                                  {errors.apportionment?.[index]
-                                    ?.percentage && (
-                                    <p className={Styles.Error}>
-                                      {
-                                        errors.apportionment[index]?.percentage
-                                          ?.message
-                                      }
-                                    </p>
-                                  )}
                                 </div>
-                              </div>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Centro de custo{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <select
-                                  className={Styles.Input}
-                                  {...register(
-                                    `apportionment.${index}.cost_center`
-                                  )}
-                                  onChange={(e) =>
-                                    setApportionments((prevApportionments) =>
-                                      prevApportionments.map(
-                                        (apportionment, i) =>
-                                          i === index
-                                            ? {
-                                                ...apportionment,
-                                                cost_center: e.target.value,
-                                              }
-                                            : apportionment
-                                      )
-                                    )
-                                  }
-                                >
-                                  <option value={0} selected>
-                                    Selecione o centro de custo
-                                  </option>
-                                  {userCostCenters !== undefined &&
-                                    userCostCenters.length >= 1 &&
-                                    userCostCenters.map((category, index) => (
-                                      <option value={category.id} key={index}>
-                                        {category.description}
-                                      </option>
-                                    ))}
-                                </select>
-                                {errors.apportionment?.[index]?.cost_center && (
+                                {errors.apportionment?.[index]?.value && (
                                   <p className={Styles.Error}>
                                     {
-                                      errors.apportionment[index]?.cost_center
+                                      errors.apportionment[index]?.value
                                         ?.message
                                     }
                                   </p>
                                 )}
                               </div>
-                              <button
-                                className={Styles.AddApportionmentButton}
-                                type="button"
-                                onClick={() => removeApportionment(index)}
-                              >
-                                Remover rateio
-                              </button>
                             </div>
-                            <div className={Styles.ApportionmentDetails}>
-                              <span>
-                                Valor rateado:{" "}
-                                <b>
-                                  {transformStringToNumber(
-                                    apportionments[index].value
-                                  ).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}
-                                </b>
-                              </span>
-                              <span>
-                                A ratear:{" "}
-                                <b>
-                                  {(
-                                    transformStringToNumber(_value || "") -
-                                    transformStringToNumber(
-                                      apportionments[index].value
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Porcentagem{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <div className={Styles.ValueInput}>
+                                <span>%</span>
+                                <input
+                                  className={Styles.Input}
+                                  placeholder="Ex.: 10"
+                                  type="text"
+                                  {...register(
+                                    `apportionment.${index}.percentage`
+                                  )}
+                                  value={apportionment.percentage}
+                                  onChange={(e) =>
+                                    setApportionments((prevApportionments) =>
+                                      prevApportionments.map(
+                                        (apportionment, i) => {
+                                          handle_PercentageInputChange(
+                                            e,
+                                            index
+                                          );
+                                          console.log(e.target.value);
+                                          return i === index
+                                            ? {
+                                                ...apportionment,
+                                                percentage: e.target.value,
+                                                value: (
+                                                  (transformStringToNumber(
+                                                    formatCurrency(
+                                                      e.target.value.replace(
+                                                        /\D/g,
+                                                        ""
+                                                      )
+                                                    ).toString()
+                                                  ) /
+                                                    100) *
+                                                  transformStringToNumber(
+                                                    formatCurrency(
+                                                      _value!.replace(/\D/g, "")
+                                                    ).toString()
+                                                  )
+                                                ).toLocaleString("pt-BR", {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                }),
+                                              }
+                                            : apportionment;
+                                        }
+                                      )
                                     )
-                                  ).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}{" "}
-                                  (
-                                  {100 -
-                                    transformStringToNumber(
-                                      apportionments[index].percentage
-                                    )}
-                                  %){" "}
-                                </b>
-                              </span>
+                                  }
+                                />
+                                {errors.apportionment?.[index]?.percentage && (
+                                  <p className={Styles.Error}>
+                                    {
+                                      errors.apportionment[index]?.percentage
+                                        ?.message
+                                    }
+                                  </p>
+                                )}
+                              </div>
                             </div>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Centro de custo{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <select
+                                className={Styles.Input}
+                                {...register(
+                                  `apportionment.${index}.cost_center`
+                                )}
+                                onChange={(e) =>
+                                  setApportionments((prevApportionments) =>
+                                    prevApportionments.map((apportionment, i) =>
+                                      i === index
+                                        ? {
+                                            ...apportionment,
+                                            cost_center: e.target.value,
+                                          }
+                                        : apportionment
+                                    )
+                                  )
+                                }
+                              >
+                                <option value={0} selected>
+                                  Selecione o centro de custo
+                                </option>
+                                {userCostCenters.length >= 1 &&
+                                  userCostCenters.map((category, index) => (
+                                    <option value={category.id} key={index}>
+                                      {category.description}
+                                    </option>
+                                  ))}
+                              </select>
+                              {errors.apportionment?.[index]?.cost_center && (
+                                <p className={Styles.Error}>
+                                  {
+                                    errors.apportionment[index]?.cost_center
+                                      ?.message
+                                  }
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              className={Styles.AddApportionmentButton}
+                              type="button"
+                              onClick={() => removeApportionment(index)}
+                            >
+                              Remover rateio
+                            </button>
                           </div>
-                        ))}
-                    </div>
-                  </section>
-                )}
+                          <div className={Styles.ApportionmentDetails}>
+                            <span>
+                              Valor rateado:{" "}
+                              <b>
+                                {apportionments[index].value ? transformStringToNumber(
+                                  apportionments[index].value
+                                ).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                }) : "0,00"}
+                              </b>
+                            </span>
+                            <span>
+                              A ratear:{" "}
+                              <b>
+                                {apportionments[index].value ? (
+                                  transformStringToNumber(_value || "") -
+                                  transformStringToNumber(
+                                    apportionments[index].value
+                                  )
+                                ).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                }) : "0,00"}{" "}
+                                (
+                                {apportionments[index].value ? (100 -
+                                  transformStringToNumber(
+                                    apportionments[index].percentage
+                                  )).toFixed(2) : 0}
+                                %){" "}
+                              </b>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </section>
                 <section className={Styles.AddProff}>
                   <button className={Styles.AddApportionmentButton}>
                     Adicionar anexo

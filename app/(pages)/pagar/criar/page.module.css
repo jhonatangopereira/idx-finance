@@ -199,17 +199,9 @@
 
 .PaymentTerms {
     display: block;
-    /* grid-template-columns: repeat(4, 1fr);
-    grid-template-areas:
-        'paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle'
-        'paymentTermsInput1 paymentTermsInput2 paymentTermsInput3 paymentTermsInput4 installmentsInteval';
-    grid-column-gap: 24px;
-    column-gap: 45px;
-    row-gap: 16px; */
 }
 
 .PaymentTerms h2 {
-    /* grid-area: paymentTermsTitle; */
     margin: 0 0 24px 0;
     width: 100%;
 }
@@ -259,6 +251,35 @@
   height: 48px;
   position: relative;
 }
+
+.PaymentTerms .LabelInputContainer div {
+    display: flex;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer {
+    flex-direction: column;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer button {
+    flex-grow: 1;
+    width: 30px;
+
+}
+
+.InstallmentInput .Input {
+  border-radius: 8px 0 0 8px;
+}
+
+.Icons {
+  display: flex;
+  flex-direction: column;
+}
+
+.Icons button {
+  flex-grow: 1;
+  width: 25px;
+}
+
 
 .ReceivedAndInformNsuContainer {
     gap: 32px;

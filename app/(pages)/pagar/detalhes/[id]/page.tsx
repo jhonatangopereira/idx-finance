@@ -3,21 +3,19 @@
 import ButtonForm from "@/app/components/AccountPopups/ButtonForm/ButtonForm";
 import CreateCategoryPopup from "@/app/components/CreateCategoryPopup/CreateCategoryPopup";
 import CreateCostCenterPopup from "@/app/components/CreateCostCenterPopup/CreateCostCenterPopup";
-import CreateSupplierPopup from "@/app/components/CreateSupplierPopup/CreateSupplierPopup";
 import StylesContainer from "@/app/page.module.css";
 import { createExpenseSchema } from "../../../../utils/validations/expenses";
 import Styles from "./page.module.css";
 
+import CreateSupplierPopup from "@/app/components/CreateSupplierPopup/CreateSupplierPopup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { parseCookies } from "nookies";
-import {
-  ChangeEvent,
-  useEffect,
-  useState
-} from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
+import { DataType } from "./types";
 
 export default function Pagar() {
   type ApportionmentType = {
@@ -27,25 +25,24 @@ export default function Pagar() {
     percentage: string;
     cost_center: number;
   };
-  const [apportionments, setApportionments] = useState<ApportionmentType[]>([
-    {
-      reference_code: "",
-      financial_category: 0,
-      value: "",
-      percentage: "",
-      cost_center: 0,
-    },
-  ]);
+  const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
+  const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
+  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
   const ap = apportionments;
   const { id } = useParams();
   const [markAs, setMarkAs] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [data, setData] = useState();
   const [isApportionmentInputChecked, setIsApportionmentInputChecked] =
     useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [percentage, setPercentage] = useState(0);
   const [hasInstallment, setHasInstallment] = useState(false);
-  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
   const [hasBankSlip, setHasBankSlip] = useState(false);
+  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
+  const [attachmentStatus, setAttachment] = useState({
+    message: "Nehum anexo adicionado.",
+  });
   const [useCategories, setUserCategories] = useState([
     { id: 0, description: "" },
   ]);
@@ -63,7 +60,6 @@ export default function Pagar() {
     register,
     handleSubmit,
     formState: { errors },
-    getValues,
     watch,
     setValue,
   } = useForm({
@@ -73,10 +69,7 @@ export default function Pagar() {
       alternative_due_date: hasInstallment ? "01/01/2024" : "",
       installment: 0,
       financial_account: 0,
-      number_of_installments: "2x",
-      supplier: 0,
-      document_number: "",
-      bank_slip: false,
+      bank_slip: hasBankSlip,
       payment: {
         value: "0",
         payment_method: "",
@@ -97,9 +90,12 @@ export default function Pagar() {
     },
   });
 
+  const attachment = watch("attachment");
+  const paymentStatus = watch("payment.status");
+
   const getData = async (fields: any) => {
-    console.log(fields.bank_slip);
-    const data = {
+    const isPaid = (document.querySelector("#receveid") as HTMLInputElement)?.checked;
+    const data: DataType = {
       supplier: fields.supplier,
       competence: format(
         new Date(fields.competence + "T00:00:00"),
@@ -114,45 +110,22 @@ export default function Pagar() {
       code: "code",
       observations: fields.observations,
       status: fields.payment.status === false ? "" : "Pago",
-      document_number: fields.document_number,
       nsu: "nsu",
       financial_category: fields.financial_category,
       category: fields.financial_category,
       cost_center: Number(fields.cost_center),
-      financial_account: fields.financial_account ?? 0,
-      interval_between_installments: hasInstallment
-        ? Number(fields.interval_between_installments)
-        : 0,
+      interval_between_installments: 0,
       bank_slip: fields.bank_slip,
+      document_number: fields.document_number,
+      financial_account: fields.financial_account,
       payment: {
-        number_of_installments: hasInstallment
-          ? Number(fields.number_of_installments.split("x")[0])
-          : 1,
-        value: Number(
-          parseFloat(fields.payment.value.replace(/\./g, "").replace(",", "."))
-            .toFixed(2)
-            .toString()
-        ),
         payment_method: fields.payment.payment_method,
-        due_date: hasInstallment
-          ? format(
-              new Date(fields.payment.due_date + "T00:00:00"),
-              "dd/MM/yyyy"
-            )
-          : format(
-              new Date(fields.alternative_due_date + "T00:00:00"),
-              "dd/MM/yyyy"
-            ),
-        payment_date: hasInstallment
-          ? format(
-              new Date(fields.payment.payment_date + "T00:00:00"),
-              "dd/MM/yyyy"
-            )
-          : format(
-              new Date(fields.alternative_due_date + "T00:00:00"),
-              "dd/MM/yyyy"
-            ),
-        status: fields.payment.status === false ? "" : "Pago",
+        payment_date: fields.payment.payment_date ?
+        format(
+            new Date(fields.payment.payment_date + "T00:00:00"),
+            "dd/MM/yyyy"
+        ) : null,
+        status: isPaid === false ? "" : "Pago",
         installment_values: hasInstallment
           ? fields.installment_values.map((installment: any) => {
               return {
@@ -164,7 +137,7 @@ export default function Pagar() {
                     .toString()
                 ),
                 due_date: format(
-                  new Date(installment.payment + "T00:00:00"),
+                  new Date(installment.due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
               };
@@ -183,28 +156,55 @@ export default function Pagar() {
               },
             ],
       },
-      apportionment: isApportionmentInputChecked
-        ? apportionments.map((a) => {
-            return {
-              financial_category: a.financial_category,
-              cost_center: Number(a.cost_center),
-              percentage: parseFloat(a.percentage.replace(",", ".")),
-              value: Number(
-                parseFloat(a.value.replace(/\./g, "").replace(",", "."))
-                  .toFixed(2)
-                  .toString()
-              ),
-              reference_code: "-",
-            };
-          })
-        : [],
+      apportionment:
+        apportionments.length > 0
+          ? apportionments.map((a) => {
+              return {
+                financial_category: Number(a.financial_category),
+                cost_center: Number(a.cost_center),
+                percentage: Number(
+                  parseFloat(a.percentage.replace(/\./g, "").replace(",", "."))
+                    .toFixed(2)
+                    .toString()
+                ),
+                value: Number(
+                  parseFloat(a.value.replace(/\./g, "").replace(",", "."))
+                    .toFixed(2)
+                    .toString()
+                ),
+                reference_code: "-",
+              };
+            })
+          : [],
+      attachment: null,
     };
 
-    try {
-      await updateExpense(data);
-      alert("Despesa editada com sucesso!");
-    } catch (err) {
-      alert("Falha ao editar a desesa.");
+    console.log(fields);
+    console.log(data);
+
+    if (fields.attachment.length > 0) {
+      const file = fields.attachment[0];
+      const reader = new FileReader();
+
+      reader.onload = async (event) => {
+        if (event.target) {
+          data.attachment = event.target.result;
+        }
+        try {
+          await updateExpense(data);
+          alert("Nova despesa criada com sucesso!");
+        } catch (err) {
+          alert("Falha ao criar a nova despesa.");
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      try {
+        await updateExpense(data);
+        alert("Nova despesa criada com sucesso!");
+      } catch (err) {
+        alert("Falha ao criar a nova despesa.");
+      }
     }
   };
 
@@ -257,7 +257,10 @@ export default function Pagar() {
           setValue("observations", data.observations);
           setValue("cost_center", Number(data.cost_center));
           setValue("financial_category", data.financial_category);
+          setAttachmentImageUrl(data.attachment);
+          setValue("attachment", data.attachment);
           setValue("document_number", data.document_number);
+          setValue("bank_slip", data.bank_slip);
 
           if (data.apportionment.length > 0) {
             setApportionments((previousValue) =>
@@ -289,42 +292,12 @@ export default function Pagar() {
             setIsApportionmentInputChecked(false);
           }
 
-          if (data.interval_between_installments !== 0) {
-            setHasInstallment(true);
-          }
-
           if (data.status !== "Pago") {
             setMarkAs(false);
           } else if (data.status === "Pago") {
             setMarkAs(true);
           }
           setValue("payment.payment_date", data.payment[0].payment_date);
-          const bankSlipInput = document.getElementById("hasBankSlip") as HTMLInputElement;
-          if (bankSlipInput !== null || bankSlipInput !== undefined) {
-            setHasBankSlip(data.bank_slip);
-            bankSlipInput.checked = data.bank_slip;
-            // bankSlipInput.checked = ;
-            console.log(hasBankSlip);
-            console.log("AAAAAAAAAAAAAAAA");
-          }
-
-          if (
-            data.value !== data.payment[0].value &&
-            data.interval_between_installments !== 0
-          ) {
-            setHasInstallment(true);
-
-            if ((data.value !== data.payment[0].value) === data.payment) {
-              setValue("number_of_installments", "2x");
-            } else {
-              setValue(
-                "number_of_installments",
-                Math.floor(
-                  Number(data.value) / Number(data.payment[0].value)
-                ).toString()
-              );
-            }
-          }
         });
     } catch (err) {
       console.log(err);
@@ -362,7 +335,7 @@ export default function Pagar() {
           Authorization: `Token ${cookies.authToken}`,
         },
       })
-        .then((repsonse) => repsonse.json())
+        .then((response) => response.json())
         .then((data) => {
           setUserBanks(data.financial_accounts);
           setUserCategories(data.financial_categories);
@@ -386,9 +359,7 @@ export default function Pagar() {
   const number_of_installments = watch("number_of_installments");
 
   useEffect(() => {
-    let value = (
-      stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])
-    )
+    let value = stringToCurrency(_value!)
       .toFixed(2)
       .toString()
       .replace(".", ",");
@@ -398,6 +369,23 @@ export default function Pagar() {
     });
     setValue("payment.value", formattedValue);
   }, [_value, number_of_installments, setValue]);
+
+  const onInstallMentIntervalFielMouseEnter = () => {
+    let installMentsIntervalInput = document.getElementById(
+      "installmentsIntervalInput"
+    ) as HTMLInputElement;
+    installMentsIntervalInput.value =
+      installMentsIntervalInput.value.split("x")[0];
+    installMentsIntervalInput.setAttribute("type", "number");
+  };
+
+  const onInstallMentIntervalFielMouseLeave = () => {
+    let installMentsIntervalInput = document.getElementById(
+      "installmentsIntervalInput"
+    ) as HTMLInputElement;
+    installMentsIntervalInput.setAttribute("type", "text");
+    installMentsIntervalInput.value = `${installMentsIntervalInput.value}x`;
+  };
 
   const [firstValue, setFirstValue] = useState("");
 
@@ -436,6 +424,45 @@ export default function Pagar() {
   const transformStringToNumber = (str: string) => {
     return parseFloat(str.replace(/\./g, "").replace(",", "."));
   };
+
+  useEffect(() => {
+    if (
+      attachment !== null &&
+      attachment !== undefined &&
+      attachment.length > 0
+    ) {
+      setAttachment({ message: `Anexo já adicionado.` });
+    } else {
+      setValue("attachment", "");
+      setAttachment({ message: `Nenhum anexo adicionado.` });
+    }
+
+    setValue("competence", new Date().toISOString().split("T")[0]);
+  }, [attachment, setValue]);
+
+  const handleRemoveProof = () => {
+    setValue("attachment", null);
+  };
+
+  const addInstallment = () => {
+    if (numberOfInstallments < 12) {
+      console.log("ADICIONAR PARCELAMENTO");
+      setNumberOfInstallments((previousValue) => previousValue + 1);
+      setValue("number_of_installments", `${numberOfInstallments}x`);
+    }
+  };
+  
+  const removeInstallment = () => {
+    if (numberOfInstallments > 2) {
+      console.log("DIMINUIR PARCELAMENTO");
+      setNumberOfInstallments((previousValue) => previousValue - 1);
+      setValue("number_of_installments", `${numberOfInstallments}x`);
+    }
+  };
+
+  useEffect(() => {
+    setValue("number_of_installments", `${numberOfInstallments}x`);
+  }, [numberOfInstallments]);
 
   return (
     <>
@@ -553,11 +580,12 @@ export default function Pagar() {
                         <select
                           className={Styles.Input}
                           {...register("financial_account")}
+                          defaultValue={0}
                         >
                           <option value={0}>
                             Selecione o banco
                           </option>
-                          {userBanks.length >= 0 &&
+                          {userBanks.length > 0 &&
                             userBanks.map((bank, index) => (
                               <option value={bank.id} key={index}>
                                 {bank.bank_name}
@@ -580,7 +608,7 @@ export default function Pagar() {
                           {...register("payment.payment_method")}
                         >
                           <option value="">
-                            Selecione a forma de pagameto
+                            Selecione a forma de pagamento
                           </option>
                           <option value="Boleto Bancário">
                             Boleto Bancário
@@ -605,6 +633,23 @@ export default function Pagar() {
                         {errors.payment?.payment_method && (
                           <p className={Styles.Error}>
                             {errors.payment.payment_method.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className={Styles.LabelInputContainer}>
+                        <label className={Styles.Label}>
+                          Data de pagamento{" "}
+                          <span className={Styles.AsterisckSpan}>*</span>
+                        </label>
+                        <input
+                          className={Styles.Input}
+                          placeholder="Data de pagamento"
+                          type="date"
+                          {...register("payment.payment_date")}
+                        />
+                        {errors.payment?.payment_date && (
+                          <p className={Styles.Error}>
+                            {errors.payment.payment_date.message}
                           </p>
                         )}
                       </div>
@@ -716,6 +761,35 @@ export default function Pagar() {
                 {hasInstallment && (
                   <section className={Styles.PaymentTerms}>
                     <h2>Condições de pagamento</h2>
+                    <div className={Styles.LabelInputContainer}>
+                      <label className={Styles.Label}>
+                        Parcelamento{" "}
+                        <span className={Styles.AsterisckSpan}>*</span>
+                      </label>
+                      <div className={Styles.InstallmentInput}>
+                        <input
+                          className={Styles.Input}
+                          placeholder="Ex.: 3x"
+                          type="text"
+                          id="installmentsIntervalInput"
+                          {...register("number_of_installments")}
+                          min={2}
+                        />
+                        <div className={Styles.Icons}>
+                          <button type="button" onClick={addInstallment}>
+                            <IoMdArrowDropup />
+                          </button>
+                          <button type="button" onClick={removeInstallment}>
+                            <IoMdArrowDropdown />
+                          </button>
+                        </div>
+                      </div>
+                      {errors.number_of_installments && (
+                        <p className={Styles.Error}>
+                          {errors.number_of_installments.message}
+                        </p>
+                      )}
+                    </div>
                     {Array.from(
                       {
                         length: parseInt(
@@ -783,239 +857,110 @@ export default function Pagar() {
                   </section>
                 )}
                 <section>
-                  <div className={Styles.ApportionmentInput}>
-                    <span>Habilitar rateio</span>
-                    <div>
-                      <div>
-                        <input
-                          type="radio"
-                          name="apportionment"
-                          id="yes"
-                          onChange={(e) => {
-                            setIsApportionmentInputChecked(true);
-                          }}
-                          checked={isApportionmentInputChecked === true}
-                        />
-                        <label htmlFor="yes">Sim</label>
-                      </div>
-                      <div>
-                        <input
-                          type="radio"
-                          name="apportionment"
-                          id="no"
-                          onChange={(e) =>
-                            setIsApportionmentInputChecked(false)
-                          }
-                          checked={isApportionmentInputChecked === false}
-                        />
-                        <label htmlFor="no">Não</label>
-                      </div>
-                    </div>
-                  </div>
                   <button
                     className={Styles.AddApportionmentButton}
                     type="button"
                     onClick={addNewApportionment}
                   >
-                    Adicionar novo rateio
+                    {ap.length > 0
+                      ? "Adicionar novo rateio"
+                      : "Adicionar Rateio"}
                   </button>
                 </section>
-                {isApportionmentInputChecked === true && (
-                  <section className={Styles.Apportionment}>
-                    <h3>Informe os dados do rateio</h3>
-                    <div id="container">
-                      {ap.length > 0 &&
-                        ap.map((apportionment, index) => (
-                          <div
-                            className="ApportionmentsContainer"
-                            key={index}
-                            id={`apportionment-${index}`}
-                          >
-                            <div className={Styles.ApportionmentInputs}>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Categoria{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <select
-                                  className={Styles.Input}
-                                  {...register(
-                                    `apportionment.${index}.financial_category`
-                                  )}
-                                  onChange={(e) =>
-                                    setApportionments((prevApportionments) =>
-                                      prevApportionments.map(
-                                        (apportionment, i) => {
-                                          return i === index
-                                            ? {
-                                                ...apportionment,
-                                                financial_category: Number(
-                                                  e.target.value
-                                                ),
-                                              }
-                                            : apportionment;
-                                        }
-                                      )
-                                    )
-                                  }
-                                >
-                                  <option value={0}>
-                                    Selecione a categoria
-                                  </option>
-                                  {useCategories.length >= 1 &&
-                                    useCategories.map((category, index) => (
-                                      <option value={category.id} key={index}>
-                                        {category.description}
-                                      </option>
-                                    ))}
-                                </select>
-                                {errors.apportionment?.[index]
-                                  ?.financial_category && (
-                                  <p className={Styles.Error}>
-                                    {
-                                      errors.apportionment[index]
-                                        ?.financial_category?.message
-                                    }
-                                  </p>
+                <section className={Styles.Apportionment}>
+                  {ap.length > 0 && <h3>Informe os dados do rateio</h3>}
+                  <div id="container">
+                    {ap.length > 0 &&
+                      ap.map((apportionment, index) => (
+                        <div
+                          className="ApportionmentsContainer"
+                          key={index}
+                          id={`apportionment-${index}`}
+                        >
+                          <div className={Styles.ApportionmentInputs}>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Categoria{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <select
+                                className={Styles.Input}
+                                {...register(
+                                  `apportionment.${index}.financial_category`
                                 )}
-                              </div>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Valor total
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <div className={Styles.ValueInput}>
-                                  <div>
-                                    <span>R$</span>
-                                    <input
-                                      className={Styles.Input}
-                                      placeholder="Ex.: 100,00"
-                                      type="text"
-                                      {...register(
-                                        `apportionment.${index}.value`
-                                      )}
-                                      onChange={(e) =>
-                                        setApportionments(
-                                          (prevApportionments) =>
-                                            prevApportionments.map(
-                                              (apportionment, i) => {
-                                                setValue(
-                                                  `apportionment.${index}.value`,
-                                                  formatCurrency(
-                                                    e.target.value.replace(
-                                                      /\D/g,
-                                                      ""
-                                                    )
-                                                  ).toString()
-                                                );
-                                                return i === index
-                                                  ? {
-                                                      ...apportionment,
-                                                      value: formatCurrency(
-                                                        e.target.value.replace(
-                                                          /\D/g,
-                                                          ""
-                                                        )
-                                                      ).toString(),
-                                                      percentage: (
-                                                        (transformStringToNumber(
-                                                          formatCurrency(
-                                                            e.target.value.replace(
-                                                              /\D/g,
-                                                              ""
-                                                            )
-                                                          ).toString()
-                                                        ) /
-                                                          transformStringToNumber(
-                                                            _value!
-                                                          )) *
-                                                          100 || 0
-                                                      ).toLocaleString(
-                                                        "pt-BR",
-                                                        {
-                                                          minimumFractionDigits: 2,
-                                                          maximumFractionDigits: 2,
-                                                        }
-                                                      ),
-                                                    }
-                                                  : apportionment;
-                                              }
-                                            )
-                                        )
+                                onChange={(e) =>
+                                  setApportionments((prevApportionments) =>
+                                    prevApportionments.map(
+                                      (apportionment, i) => {
+                                        return i === index
+                                          ? {
+                                              ...apportionment,
+                                              financial_category: Number(
+                                                e.target.value
+                                              ),
+                                            }
+                                          : apportionment;
                                       }
-                                    />
-                                  </div>
-                                  {errors.apportionment?.[index]?.value && (
-                                    <p className={Styles.Error}>
-                                      {
-                                        errors.apportionment[index]?.value
-                                          ?.message
-                                      }
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Porcentagem{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <div className={Styles.ValueInput}>
-                                  <span>%</span>
+                                    )
+                                  )
+                                }
+                              >
+                                <option value={0}>Selecione a categoria</option>
+                                {useCategories.length >= 1 &&
+                                  useCategories.map((category, index) => (
+                                    <option value={category.id} key={index}>
+                                      {category.description}
+                                    </option>
+                                  ))}
+                              </select>
+                              {errors.apportionment?.[index]
+                                ?.financial_category && (
+                                <p className={Styles.Error}>
+                                  {
+                                    errors.apportionment[index]
+                                      ?.financial_category?.message
+                                  }
+                                </p>
+                              )}
+                            </div>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Valor total
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <div className={Styles.ValueInput}>
+                                <div>
+                                  <span>R$</span>
                                   <input
                                     className={Styles.Input}
-                                    placeholder="Ex.: 10"
+                                    placeholder="Ex.: 100,00"
                                     type="text"
-                                    value={formatCurrency(
-                                      apportionment.percentage.replace(
-                                        /\D/g,
-                                        ""
-                                      )
-                                    ).toString()}
                                     {...register(
-                                      `apportionment.${index}.percentage`
+                                      `apportionment.${index}.value`
                                     )}
                                     onChange={(e) =>
                                       setApportionments((prevApportionments) =>
                                         prevApportionments.map(
                                           (apportionment, i) => {
-                                            handle_PercentageInputChange(
-                                              e,
-                                              index
-                                            );
                                             setValue(
                                               `apportionment.${index}.value`,
-                                              (
-                                                (transformStringToNumber(
-                                                  formatCurrency(
-                                                    e.target.value.replace(
-                                                      /\D/g,
-                                                      ""
-                                                    )
-                                                  ).toString()
-                                                ) /
-                                                  100) *
-                                                transformStringToNumber(
-                                                  formatCurrency(
-                                                    _value!.replace(/\D/g, "")
-                                                  ).toString()
+                                              formatCurrency(
+                                                e.target.value.replace(
+                                                  /\D/g,
+                                                  ""
                                                 )
-                                              ).toLocaleString("pt-BR", {
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                              })
+                                              ).toString()
                                             );
                                             return i === index
                                               ? {
                                                   ...apportionment,
-                                                  percentage: e.target.value,
-                                                  value: (
+                                                  value: formatCurrency(
+                                                    e.target.value.replace(
+                                                      /\D/g,
+                                                      ""
+                                                    )
+                                                  ).toString(),
+                                                  percentage: (
                                                     (transformStringToNumber(
                                                       formatCurrency(
                                                         e.target.value.replace(
@@ -1024,15 +969,10 @@ export default function Pagar() {
                                                         )
                                                       ).toString()
                                                     ) /
-                                                      100) *
-                                                    transformStringToNumber(
-                                                      formatCurrency(
-                                                        _value!.replace(
-                                                          /\D/g,
-                                                          ""
-                                                        )
-                                                      ).toString()
-                                                    )
+                                                      transformStringToNumber(
+                                                        _value!
+                                                      )) *
+                                                      100 || 0
                                                   ).toLocaleString("pt-BR", {
                                                     minimumFractionDigits: 2,
                                                     maximumFractionDigits: 2,
@@ -1044,125 +984,224 @@ export default function Pagar() {
                                       )
                                     }
                                   />
-                                  {errors.apportionment?.[index]
-                                    ?.percentage && (
-                                    <p className={Styles.Error}>
-                                      {
-                                        errors.apportionment[index]?.percentage
-                                          ?.message
-                                      }
-                                    </p>
-                                  )}
                                 </div>
-                              </div>
-                              <div className={Styles.LabelInputContainer}>
-                                <label className={Styles.Label}>
-                                  Centro de custo{" "}
-                                  <span className={Styles.AsterisckSpan}>
-                                    *
-                                  </span>
-                                </label>
-                                <select
-                                  className={Styles.Input}
-                                  {...register(
-                                    `apportionment.${index}.cost_center`
-                                  )}
-                                  onChange={(e) =>
-                                    setApportionments((prevApportionments) =>
-                                      prevApportionments.map(
-                                        (apportionment, i) =>
-                                          i === index
-                                            ? {
-                                                ...apportionment,
-                                                cost_center: Number(
-                                                  e.target.value
-                                                ),
-                                              }
-                                            : apportionment
-                                      )
-                                    )
-                                  }
-                                >
-                                  <option value={0} selected>
-                                    Selecione o centro de custo
-                                  </option>
-                                  {userCostCenters.length >= 1 &&
-                                    userCostCenters.map((category, index) => (
-                                      <option value={category.id} key={index}>
-                                        {category.description}
-                                      </option>
-                                    ))}
-                                </select>
-                                {errors.apportionment?.[index]?.cost_center && (
+                                {errors.apportionment?.[index]?.value && (
                                   <p className={Styles.Error}>
                                     {
-                                      errors.apportionment[index]?.cost_center
+                                      errors.apportionment[index]?.value
                                         ?.message
                                     }
                                   </p>
                                 )}
                               </div>
-                              <button
-                                className={Styles.AddApportionmentButton}
-                                type="button"
-                                onClick={() => removeApportionment(index)}
-                              >
-                                Remover rateio
-                              </button>
                             </div>
-                            <div className={Styles.ApportionmentDetails}>
-                              <span>
-                                Valor rateado:{" "}
-                                <b>
-                                  {transformStringToNumber(
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Porcentagem{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <div className={Styles.ValueInput}>
+                                <span>%</span>
+                                <input
+                                  className={Styles.Input}
+                                  placeholder="Ex.: 10"
+                                  type="text"
+                                  value={formatCurrency(
+                                    apportionment.percentage.replace(/\D/g, "")
+                                  ).toString()}
+                                  {...register(
+                                    `apportionment.${index}.percentage`
+                                  )}
+                                  onChange={(e) =>
+                                    setApportionments((prevApportionments) =>
+                                      prevApportionments.map(
+                                        (apportionment, i) => {
+                                          handle_PercentageInputChange(
+                                            e,
+                                            index
+                                          );
+                                          setValue(
+                                            `apportionment.${index}.value`,
+                                            (
+                                              (transformStringToNumber(
+                                                formatCurrency(
+                                                  e.target.value.replace(
+                                                    /\D/g,
+                                                    ""
+                                                  )
+                                                ).toString()
+                                              ) /
+                                                100) *
+                                              transformStringToNumber(
+                                                formatCurrency(
+                                                  _value!.replace(/\D/g, "")
+                                                ).toString()
+                                              )
+                                            ).toLocaleString("pt-BR", {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                            })
+                                          );
+                                          return i === index
+                                            ? {
+                                                ...apportionment,
+                                                percentage: e.target.value,
+                                                value: (
+                                                  (transformStringToNumber(
+                                                    formatCurrency(
+                                                      e.target.value.replace(
+                                                        /\D/g,
+                                                        ""
+                                                      )
+                                                    ).toString()
+                                                  ) /
+                                                    100) *
+                                                  transformStringToNumber(
+                                                    formatCurrency(
+                                                      _value!.replace(/\D/g, "")
+                                                    ).toString()
+                                                  )
+                                                ).toLocaleString("pt-BR", {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                }),
+                                              }
+                                            : apportionment;
+                                        }
+                                      )
+                                    )
+                                  }
+                                />
+                                {errors.apportionment?.[index]?.percentage && (
+                                  <p className={Styles.Error}>
+                                    {
+                                      errors.apportionment[index]?.percentage
+                                        ?.message
+                                    }
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className={Styles.LabelInputContainer}>
+                              <label className={Styles.Label}>
+                                Centro de custo{" "}
+                                <span className={Styles.AsterisckSpan}>*</span>
+                              </label>
+                              <select
+                                className={Styles.Input}
+                                {...register(
+                                  `apportionment.${index}.cost_center`
+                                )}
+                                onChange={(e) =>
+                                  setApportionments((prevApportionments) =>
+                                    prevApportionments.map((apportionment, i) =>
+                                      i === index
+                                        ? {
+                                            ...apportionment,
+                                            cost_center: Number(e.target.value),
+                                          }
+                                        : apportionment
+                                    )
+                                  )
+                                }
+                              >
+                                <option value={0} selected>
+                                  Selecione o centro de custo
+                                </option>
+                                {userCostCenters.length >= 1 &&
+                                  userCostCenters.map((category, index) => (
+                                    <option value={category.id} key={index}>
+                                      {category.description}
+                                    </option>
+                                  ))}
+                              </select>
+                              {errors.apportionment?.[index]?.cost_center && (
+                                <p className={Styles.Error}>
+                                  {
+                                    errors.apportionment[index]?.cost_center
+                                      ?.message
+                                  }
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              className={Styles.AddApportionmentButton}
+                              type="button"
+                              onClick={() => removeApportionment(index)}
+                            >
+                              Remover rateio
+                            </button>
+                          </div>
+                          <div className={Styles.ApportionmentDetails}>
+                            <span>
+                              Valor rateado:{" "}
+                              <b>
+                                {transformStringToNumber(
+                                  formatCurrency(
+                                    apportionments[index].value.replace(
+                                      /\D/g,
+                                      ""
+                                    )
+                                  ).toString()
+                                ).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </b>
+                            </span>
+                            <span>
+                              A ratear:{" "}
+                              <b>
+                                {" "}
+                                {(
+                                  transformStringToNumber(_value || "") -
+                                  transformStringToNumber(
                                     formatCurrency(
                                       apportionments[index].value.replace(
                                         /\D/g,
                                         ""
                                       )
                                     ).toString()
-                                  ).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}
-                                </b>
-                              </span>
-                              <span>
-                                A ratear:{" "}
-                                <b>
-                                  {" "}
-                                  {(
-                                    transformStringToNumber(_value || "") -
-                                    transformStringToNumber(
-                                      formatCurrency(
-                                        apportionments[index].value.replace(
-                                          /\D/g,
-                                          ""
-                                        )
-                                      ).toString()
-                                    )
-                                  ).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}{" "}
-                                  (
-                                  {100 -
-                                    transformStringToNumber(
-                                      formatCurrency(
-                                        apportionments[
-                                          index
-                                        ].percentage.replace(/\D/g, "")
+                                  )
+                                ).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}{" "}
+                                (
+                                {100 -
+                                  transformStringToNumber(
+                                    formatCurrency(
+                                      apportionments[index].percentage.replace(
+                                        /\D/g,
+                                        ""
                                       )
-                                    )}
-                                  %){" "}
-                                </b>
-                              </span>
-                            </div>
+                                    )
+                                  )}
+                                %){" "}
+                              </b>
+                            </span>
                           </div>
-                        ))}
-                    </div>
-                  </section>
-                )}
+                        </div>
+                      ))}
+                  </div>
+                </section>
+                <section className={Styles.AddProff}>
+                  <button className={Styles.AddApportionmentButton}>
+                    {attachmentImageUrl !== ""
+                      ? "Editar anexo"
+                      : "Adicionar anexo"}
+                  </button>
+                  <input type="file" id="file" {...register("attachment")} />
+                  <p>{attachmentStatus.message}</p>
+                  {attachmentImageUrl !== "" && (
+                    <a href={attachmentImageUrl} download="Anexo">
+                      Baixar anexo
+                    </a>
+                  )}
+                  {attachment !== "" && (
+                    <a onClick={handleRemoveProof}>Remover anexo</a>
+                  )}
+                </section>
                 <section>
                   <div className={Styles.MarkAs}>
                     <span>Marcar como</span>
@@ -1181,22 +1220,18 @@ export default function Pagar() {
                         type="checkbox"
                         id="hasInstallment"
                         checked={hasInstallment}
-                        onChange={() =>
+                        onInput={() =>
                           setHasInstallment((previousValue) => !previousValue)
                         }
                       />
                       <label htmlFor="hasInstallment">Parcelado</label>
-
                       <input
                         type="checkbox"
                         id="hasBankSlip"
-                        checked={hasBankSlip}
-                        {...register("bank_slip")}
-                        onChange={() =>
-                          {setHasBankSlip((previousValue) => !previousValue)
-                            console.log(hasBankSlip)
-                          }
+                        onInput={() =>
+                          setHasBankSlip((previousValue) => !previousValue)
                         }
+                        {...register("bank_slip")}
                       />
                       <label htmlFor="hasBankSlip">Boleto em mãos</label>
                     </div>

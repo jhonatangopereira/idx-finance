@@ -31,30 +31,6 @@
     gap: 11px;
 }
 
-.InstallmentContainer {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.ValueInputInstallment {
-    display: flex;
-    flex-direction: column;
-    margin: 24px 0 24px 0;
-    gap: 12px;
-}
-
-.DueDateInput {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 340px;
-}
-
-.DueDateInput .Input {
-    width: 340px;
-}
-
 .LabelInputContainer .Label {
     font-size: 12px;
     color: #A3A3A3;
@@ -89,6 +65,7 @@
     color: #007afd;
     font-weight: bold;
     cursor: pointer;
+    : none;
 }
 
 .LaunchInformation input {
@@ -198,20 +175,19 @@
 }
 
 .PaymentTerms {
-    display: block;
-    /* grid-template-columns: repeat(4, 1fr);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     grid-template-areas:
         'paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle paymentTermsTitle'
         'paymentTermsInput1 paymentTermsInput2 paymentTermsInput3 paymentTermsInput4 installmentsInteval';
     grid-column-gap: 24px;
     column-gap: 45px;
-    row-gap: 16px; */
+    row-gap: 16px;
 }
 
 .PaymentTerms h2 {
-    /* grid-area: paymentTermsTitle; */
+    grid-area: paymentTermsTitle;
     margin: 0 0 24px 0;
-    width: 100%;
 }
 
 .PaymentTerms input[placeholder="Forma de pagamento"],
@@ -258,6 +234,34 @@
 .PaymentTerms .InstallmentsIntervalInput {  
   height: 48px;
   position: relative;
+}
+
+.PaymentTerms .LabelInputContainer div {
+    display: flex;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer {
+    flex-direction: column;
+}
+
+.PaymentTerms .LabelInputContainer div .InputIconsContainer button {
+    flex-grow: 1;
+    width: 30px;
+
+}
+
+.InstallmentInput .Input {
+  border-radius: 8px 0 0 8px;
+}
+
+.Icons {
+  display: flex;
+  flex-direction: column;
+}
+
+.Icons button {
+  flex-grow: 1;
+  width: 25px;
 }
 
 .ReceivedAndInformNsuContainer {
@@ -372,6 +376,30 @@
     left: 4px;  
     transition: .2s;
 }
+
+.AddProff {
+    position: relative;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.AddProff input {
+    position: absolute;
+    height: 70%;
+    width: 100%;
+    top: 0;
+    opacity: 0;
+}
+
+.AddProff a {
+    color: #007afd;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+}
+
 .MarkAs {
     grid-area: paymentTermsMarkAs;
     display: flex;

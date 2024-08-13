@@ -48,10 +48,10 @@ const createExpenseSchema = yup.object().shape({
     }),
     apportionment: yup.array().of(yup.object().shape({
         reference_code: yup.string().nullable(),
-        financial_category: yup.number().required("Digite a categoria."),
+        financial_category: yup.number().min(1, "Escolha a categoria.").required("Escolha a categoria."),
         value: yup.string().nullable(),
         percentage: yup.string().matches( /^(?!-)(\d+)(?:,\d{1,2})?$/, 'Digite um valor positivo válido.'),
-        cost_center: yup.number().required("Digite o centro de custo."),
+        cost_center: yup.number().min(1, "Escolha o centro de custo.").required("Escolha o centro de custo."),
     }).nullable()).nullable()
 });
 

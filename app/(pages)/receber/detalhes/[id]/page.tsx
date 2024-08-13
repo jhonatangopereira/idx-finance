@@ -263,7 +263,7 @@ export default function Receita() {
 
         
        try {
-            await fetch(`${process.env.NEXT_PUBLIC_URL_API}/api/release-options/`, {
+            await fetch(`${"https://idxfinance.com.br"}/api/release-options/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
