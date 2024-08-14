@@ -40,18 +40,22 @@ const createExpenseSchema = yup.object().shape({
         }),
         due_date: yup.string(),
         installment_values: yup.array().of(yup.object().shape({
-            due_date: yup.string().required("Digite a data de vencimento."),
-            value: yup.string().required("Digite um valor.")
+            due_date: yup.string()
+                .required("Digite a data de vencimento."),
+            value: yup.string()
+                .required("Digite um valor.")
+                .min(0, "Digite um valor positivo.")
+                .matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
         })),
         payment_date: yup.string().required("Digite a data de pagamento.").nullable(),
         status: yup.boolean(),
     }),
     apportionment: yup.array().of(yup.object().shape({
         reference_code: yup.string().nullable(),
-        financial_category: yup.number().min(1, "Escolha a categoria.").required("Escolha a categoria."),
+        financial_category: yup.number().required("Digite a categoria."),
         value: yup.string().nullable(),
         percentage: yup.string().matches( /^(?!-)(\d+)(?:,\d{1,2})?$/, 'Digite um valor positivo válido.'),
-        cost_center: yup.number().min(1, "Escolha o centro de custo.").required("Escolha o centro de custo."),
+        cost_center: yup.number().required("Digite o centro de custo."),
     }).nullable()).nullable()
 });
 

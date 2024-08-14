@@ -12,7 +12,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { parseCookies } from "nookies";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import { DataType } from "./types";
@@ -27,8 +27,20 @@ export default function Pagar() {
   };
   const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
   const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
-  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
   const ap = apportionments;
+  
+  const [hasInstallment, setHasInstallment] = useState(false);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
+  const [installmentValues, setInstallmentValues] = useState<any[]>([{
+    due_date: "01/01/2024",
+    value: "0",
+  }, {
+    due_date: "01/01/2024",
+    value: "0",
+  }]);
+  console.log(hasInstallment);
+  console.log(installmentValues);
+
   const { id } = useParams();
   const [markAs, setMarkAs] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
@@ -37,7 +49,6 @@ export default function Pagar() {
     useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [percentage, setPercentage] = useState(0);
-  const [hasInstallment, setHasInstallment] = useState(false);
   const [hasBankSlip, setHasBankSlip] = useState(false);
   const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
   const [attachmentStatus, setAttachment] = useState({
@@ -62,6 +73,8 @@ export default function Pagar() {
     formState: { errors },
     watch,
     setValue,
+    resetField,
+    getValues,
   } = useForm({
     resolver: yupResolver(createExpenseSchema),
     defaultValues: {
@@ -91,7 +104,8 @@ export default function Pagar() {
   });
 
   const attachment = watch("attachment");
-  const paymentStatus = watch("payment.status");
+
+  console.log(errors);
 
   const getData = async (fields: any) => {
     const isPaid = (document.querySelector("#receveid") as HTMLInputElement)?.checked;
@@ -117,17 +131,17 @@ export default function Pagar() {
       interval_between_installments: 0,
       bank_slip: fields.bank_slip,
       document_number: fields.document_number,
-      financial_account: fields.financial_account,
+      financial_account: isPaid ? fields.financial_account : null,
       payment: {
-        payment_method: fields.payment.payment_method,
-        payment_date: fields.payment.payment_date ?
+        payment_method: isPaid ? fields.payment.payment_method : null,
+        payment_date: isPaid ?
         format(
             new Date(fields.payment.payment_date + "T00:00:00"),
             "dd/MM/yyyy"
         ) : null,
         status: isPaid === false ? "" : "Pago",
         installment_values: hasInstallment
-          ? fields.installment_values.map((installment: any) => {
+          ? installmentValues.map((installment: any) => {
               return {
                 value: Number(
                   parseFloat(
@@ -159,26 +173,28 @@ export default function Pagar() {
       apportionment:
         apportionments.length > 0
           ? apportionments.map((a) => {
+            console.log(a.percentage);
+            console.log(a.value);
               return {
                 financial_category: Number(a.financial_category),
                 cost_center: Number(a.cost_center),
-                percentage: Number(
-                  parseFloat(a.percentage.replace(/\./g, "").replace(",", "."))
+                percentage: a.percentage.search(",") > 0 ? Number(
+                  parseFloat(a.percentage.replace(".", "").replace(",", "."))
                     .toFixed(2)
                     .toString()
-                ),
-                value: Number(
-                  parseFloat(a.value.replace(/\./g, "").replace(",", "."))
+                ) : parseFloat(a.percentage),
+                value: a.value.search(",") > 0 ? Number(
+                  parseFloat(a.value.replace(".", "").replace(",", "."))
                     .toFixed(2)
                     .toString()
-                ),
+                ) : parseFloat(a.value),
                 reference_code: "-",
               };
             })
           : [],
       attachment: null,
     };
-
+    console.log(apportionments);
     console.log(fields);
     console.log(data);
 
@@ -274,22 +290,45 @@ export default function Pagar() {
                   parseFloat(a.percentage).toLocaleString("pt-BR", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
+                  }).replace(".", ",")
+                );
+                setValue(`apportionment.${index}.cost_center`, a.cost_center);
+                setValue(
+                  `apportionment.${index}.value`,
+                  parseFloat(a.value).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   })
                 );
-                setValue(`apportionment.${index}.cost_center`, a.cost_center),
-                  setValue(
-                    `apportionment.${index}.value`,
-                    parseFloat(a.value).toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  );
                 return a;
               })
             );
+            console.log(apportionments);
             setIsApportionmentInputChecked(true);
           } else {
             setIsApportionmentInputChecked(false);
+          }
+
+          if (data.payment.length > 1) {
+            setHasInstallment(true);
+            setInstallmentValues(data.payment.map((payment:any, index:number) => ({
+              value: parseFloat(payment.value).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }),
+              due_date: payment.due_date,
+            })));
+            data.payment.map((payment:any, index:number) => {
+              setValue(`payment.installment_values.${index}.due_date`, payment.due_date);
+              setValue(`payment.installment_values.${index}.value`, parseFloat(payment.value).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }));
+            })
+            setValue("number_of_installments", `${data.payment.length}x`);
+            setNumberOfInstallments(data.payment.length);
+          } else {
+            setHasInstallment(false);
           }
 
           if (data.status !== "Pago") {
@@ -444,25 +483,34 @@ export default function Pagar() {
     setValue("attachment", null);
   };
 
+  useEffect(() => {
+    setValue("number_of_installments", `${numberOfInstallments}x`);
+  }, [numberOfInstallments]);
+
   const addInstallment = () => {
     if (numberOfInstallments < 12) {
-      console.log("ADICIONAR PARCELAMENTO");
       setNumberOfInstallments((previousValue) => previousValue + 1);
-      setValue("number_of_installments", `${numberOfInstallments}x`);
+      setInstallmentValues((previousValues) => [
+        ...previousValues,
+        { value: "", due_date: "" },
+      ]);
     }
   };
   
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
-      console.log("DIMINUIR PARCELAMENTO");
       setNumberOfInstallments((previousValue) => previousValue - 1);
-      setValue("number_of_installments", `${numberOfInstallments}x`);
+      setInstallmentValues((previousValues) =>
+        previousValues.slice(0, -1)
+      );
+      resetField(`payment.installment_values.${numberOfInstallments - 1}.value`);
+      resetField(`payment.installment_values.${numberOfInstallments - 1}.due_date`);
     }
   };
 
-  useEffect(() => {
-    setValue("number_of_installments", `${numberOfInstallments}x`);
-  }, [numberOfInstallments]);
+  const installmentArray = Array.from({ length: numberOfInstallments }, (_, i) => {
+    return i + 1
+  })
 
   return (
     <>
@@ -791,11 +839,7 @@ export default function Pagar() {
                       )}
                     </div>
                     {Array.from(
-                      {
-                        length: parseInt(
-                          getValues("number_of_installments") || "0"
-                        ),
-                      },
+                      installmentArray,
                       (_, index) => (
                         <div
                           key={index}
@@ -816,6 +860,22 @@ export default function Pagar() {
                                   `payment.installment_values.${index}.value`
                                 )}
                                 min={0}
+                                onChange={(e) => {
+                                  setValue(
+                                    `payment.installment_values.${index}.value`,
+                                    formatCurrency(
+                                      e.target.value.replace(
+                                        /\D/g,
+                                        ""
+                                      )
+                                    ).toString(),
+                                  );
+                                  setInstallmentValues((previousValues) =>
+                                    previousValues.map((installment, i) =>
+                                      i === index ? { ...installment, value: e.target.value } : installment
+                                    )
+                                  );
+                                }}
                               />
                             </div>
                           </div>
@@ -840,6 +900,13 @@ export default function Pagar() {
                               {...register(
                                 `payment.installment_values.${index}.due_date`
                               )}
+                              onChange={(e) =>
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index ? { ...installment, due_date: e.target.value } : installment
+                                  )
+                                )
+                              }
                             />
                             {errors.payment?.installment_values?.[index]
                               ?.due_date && (

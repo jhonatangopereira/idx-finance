@@ -11,18 +11,30 @@ import Styles from "./page.module.css";
 import { DataType } from "./types";
 
 import { yupResolver } from "@hookform/resolvers/yup";
-import { format } from "date-fns";
+import { format, previousDay } from "date-fns";
 import { parseCookies } from "nookies";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
+import { preconnect } from "react-dom";
 
 export default function CreateAccount() {
   const [hasInstallment, setHasInstallment] = useState(false);
+  console.log(hasInstallment);
   const [hasBankSlip, setHasBankSlip] = useState(false);
   const [markAs, setMarkAs] = useState(false);
   const [apportionments, setApportionments] = useState<any[]>([]);
   const ap = apportionments;
+
+  const [installmentValues, setInstallmentValues] = useState<any[]>([{
+    due_date: "01/01/2024",
+    value: "0",
+  }, {
+    due_date: "01/01/2024",
+    value: "0",
+  }]);
+  console.log(installmentValues);
+ 
   const {
     register,
     handleSubmit,
@@ -75,9 +87,8 @@ export default function CreateAccount() {
   const paymentStatus = watch("payment.status");
 
   const getData = async (fields: any) => {
-    const formData = new FormData();
     const cookies = parseCookies();
-
+    
     const data: DataType = {
       supplier: fields.supplier,
       competence: format(
@@ -111,7 +122,7 @@ export default function CreateAccount() {
           : null,
         status: fields.payment.status === false ? "" : "Pago",
         installment_values: hasInstallment
-          ? fields.installment_values.map((installment: any) => {
+          ? installmentValues.map((installment: any) => {
               return {
                 value: Number(
                   parseFloat(
@@ -182,7 +193,7 @@ export default function CreateAccount() {
       reader.readAsDataURL(file);
     } else {
       try {
-        await createExpense(data, cookies.authToken);
+        const response = await createExpense(data, cookies.authToken);
         alert("Nova despesa criada com sucesso!");
       } catch (err) {
         alert("Falha ao criar a nova despesa.");
@@ -289,23 +300,6 @@ export default function CreateAccount() {
     setApportionments(filteredApportionments);
   };
 
-  const onInstallMentIntervalFielMouseEnter = () => {
-    let installMentsIntervalInput = document.getElementById(
-      "installmentsIntervalInput"
-    ) as HTMLInputElement;
-    installMentsIntervalInput.value =
-      installMentsIntervalInput.value.split("x")[0];
-    installMentsIntervalInput.setAttribute("type", "number");
-  };
-
-  const onInstallMentIntervalFielMouseLeave = () => {
-    let installMentsIntervalInput = document.getElementById(
-      "installmentsIntervalInput"
-    ) as HTMLInputElement;
-    installMentsIntervalInput.setAttribute("type", "text");
-    installMentsIntervalInput.value = `${installMentsIntervalInput.value}x`;
-  };
-
   const [firstValue, setFirstValue] = useState("");
 
   const handle_ValueInputChange = (
@@ -350,20 +344,29 @@ export default function CreateAccount() {
 
   const addInstallment = () => {
     if (numberOfInstallments < 12) {
-      console.log("ADICIONAR PARCELAMENTO");
       setNumberOfInstallments((previousValue) => previousValue + 1);
-      setValue("number_of_installments", `${numberOfInstallments}x`);
+      setInstallmentValues((previousValues) => [
+        ...previousValues,
+        { value: "", due_date: "" },
+      ]);
     }
   };
   
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
-      console.log("DIMINUIR PARCELAMENTO");
       setNumberOfInstallments((previousValue) => previousValue - 1);
-      setValue("number_of_installments", `${numberOfInstallments}x`);
+      setInstallmentValues((previousValues) =>
+        previousValues.slice(0, -1)
+      );
     }
   };
 
+  const installmentArray = Array.from({ length: numberOfInstallments }, (_, i) => {
+    return i + 1
+  })
+
+  console.log(errors);
+  
   useEffect(() => {
     setValue("number_of_installments", `${numberOfInstallments}x`);
   }, [numberOfInstallments]);
@@ -681,7 +684,7 @@ export default function CreateAccount() {
                           type="text"
                           id="installmentsIntervalInput"
                           {...register("number_of_installments")}
-                          min={2}
+                          
                         />
                         <div className={Styles.Icons}>
                           <button type="button" onClick={addInstallment}>
@@ -699,11 +702,7 @@ export default function CreateAccount() {
                       )}
                     </div>
                     {Array.from(
-                      {
-                        length: parseInt(
-                          getValues("number_of_installments") || "0"
-                        ),
-                      },
+                      installmentArray,
                       (_, index) => (
                         <div
                           key={index}
@@ -724,6 +723,23 @@ export default function CreateAccount() {
                                   `payment.installment_values.${index}.value`
                                 )}
                                 min={0}
+                                defaultValue={"0,00"}
+                                onChange={(e) => {
+                                  setValue(
+                                    `payment.installment_values.${index}.value`,
+                                    formatCurrency(
+                                      e.target.value.replace(
+                                        /\D/g,
+                                        ""
+                                      )
+                                    ).toString(),
+                                  );
+                                  setInstallmentValues((previousValues) =>
+                                    previousValues.map((installment, i) =>
+                                      i === index ? { ...installment, value: e.target.value } : installment
+                                    )
+                                  );
+                                }}
                               />
                             </div>
                           </div>
@@ -748,6 +764,13 @@ export default function CreateAccount() {
                               {...register(
                                 `payment.installment_values.${index}.due_date`
                               )}
+                              onChange={(e) =>
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index ? { ...installment, due_date: e.target.value } : installment
+                                  )
+                                )
+                              }
                             />
                             {errors.payment?.installment_values?.[index]
                               ?.due_date && (
@@ -796,6 +819,7 @@ export default function CreateAccount() {
                                 {...register(
                                   `apportionment.${index}.financial_category`
                                 )}
+                                defaultValue={0}
                                 onChange={(e) =>
                                   setApportionments((prevApportionments) =>
                                     prevApportionments.map(
@@ -1072,8 +1096,9 @@ export default function CreateAccount() {
                       <input
                         type="checkbox"
                         id="hasInstallment"
-                        onInput={() =>
-                          setHasInstallment((previousValue) => !previousValue)
+                        onInput={() => {
+                            setHasInstallment((previousValue) => !previousValue);
+                          }
                         }
                       />
                       <label htmlFor="hasInstallment">Parcelado</label>
