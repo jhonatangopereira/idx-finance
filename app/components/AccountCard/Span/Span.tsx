@@ -2,17 +2,22 @@ import Styles from './component.module.css';
 import { SpanProps } from './types';
 
 export default function Span ({ children, situation }: SpanProps) {
-    if(situation.toUpperCase() === 'PAGO' || situation.toUpperCase() === 'RECEBIDO') {
-        return <span className={Styles.PrimarySpan}>{children}</span>
+    let situationStyle: string;
+    switch (situation.toUpperCase()) {
+        case 'PAGO':
+        case 'RECEBIDO':
+            situationStyle = Styles.PrimarySpan;
+            break;
+        case 'VENCIDO':
+            situationStyle = Styles.SecondarySpan;
+            break;
+        case 'À VENCER':
+            situationStyle = Styles.TertiarySpan;
+            break;
+        default:
+            situationStyle = Styles.PrimarySpan;
+            break;
     }
 
-    if(situation.toUpperCase() === 'VENCIDO') {
-        return <span className={Styles.SecondarySpan}>{children}</span>
-    }
-
-    if(situation.toUpperCase() === 'À VENCER' || situation.toUpperCase() === "VENCIDO") {
-        return <span className={Styles.TertiarySpan}>{children}</span>
-    }
-
-    return <span></span>
+    return <span className={situationStyle}>{children ?? ""}</span>
 }

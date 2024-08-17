@@ -17,7 +17,7 @@
 .Table .TableLabel{
     width: 100%;
     display: grid;
-    grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 0.1fr 1.2fr 1.2fr 0.5fr 0.7fr 0.7fr 1.2fr;
     justify-content: space-evenly;
     gap: 108px;
     background-color: rgba(0, 0, 0, 0.05);
@@ -28,21 +28,22 @@
     font-weight: 600;
     font-size: 16px;
     box-sizing: border-box;
-    text-align: left;
+    text-align: center;
+    align-items: center;
 }
 
 .Table .TableLabel input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    display: none;
+    visibility: hidden;
 }
 
 .Table .TableContent {
     font-size: 16px;
     display: flex;
     flex-direction: column;
-    gap: 21px;
-    margin: 21px 0 0 0;
+    /* gap: 21px; */
+    margin: 15px 0 15px 0;
 }
 
 .Table .TableContent .TableEmpty{

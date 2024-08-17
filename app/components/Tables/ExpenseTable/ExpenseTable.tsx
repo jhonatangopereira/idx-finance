@@ -1,5 +1,6 @@
 import AccountCard from "@/app/components/AccountCard/AccountCard";
 import InforCard from '@/app/components/Analytics/InforCards';
+import { format } from "date-fns";
 import Styles from './component.module.css';
 import { Expense, TableComponentProps } from "./types";
 
@@ -13,6 +14,8 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
             const order = ["Vencido", "À vencer", "Pago"];
             return order.indexOf(a.status) - order.indexOf(b.status);
         });
+
+        console.log(sortedData);
 
         const totalValue = data.reduce((current: number, account: Expense) => {
             current += Number(account.value);
@@ -70,6 +73,9 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                             <input type='checkbox' onClick={() => checkAllBoxes()} />
                         </div>
                         <div>
+                            Fornecedor
+                        </div>
+                        <div>
                             Descrição
                         </div>
                         <div>
@@ -79,6 +85,9 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                             Valor
                         </div>
                         <div>
+                            Número do documento
+                        </div>
+                        <div>
                             Situação
                         </div>
                     </div>
@@ -86,10 +95,12 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                         {sortedData.map((account: any, index: number) => (                            
                             <div key={index}>
                                 <AccountCard 
-                                    description={account.description}
-                                    maturity={account.competence}
+                                    responsible={account.supplier_name ?? "-"}
+                                    description={account.description ?? "-"}
+                                    maturity={format(new Date(account.payment[0].due_date), 'dd/MM/yyyy')}
                                     value={Number(account.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     situation={account.status}
+                                    document_number={account.document_number ?? "-"}
                                     linkTo={`${linkTo}/detalhes/${account.id}`}
                                     id={Number(account.id)}
                                     type="expense"

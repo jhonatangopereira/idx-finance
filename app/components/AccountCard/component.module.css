@@ -1,7 +1,7 @@
 .Container {
     width: 100%;
     display: grid;
-    grid-template-columns: 0.5fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 0.1fr 1.2fr 1.2fr 0.5fr 0.7fr 0.7fr 1.2fr;
     justify-content: space-evenly;
     gap: 108px;
     padding: 8px 40px 8px 40px;
@@ -12,6 +12,10 @@
     align-items: center;
     text-align: left;
 }
+.Container span {
+    text-align: center;
+    align-items: center;
+}
 
 .Container input {
     width: 16px;
@@ -20,25 +24,31 @@
 
 .Container div {
     display: flex;
-    gap: 24px;
+    flex-direction: column;
+    gap: 10px;
     align-items: center;
-    text-align: left;
+    text-align: right;
+}
+.Container div div {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
 }
 
-.PencilIcon {
+.Icon {
     cursor: pointer;
     transition: 0.3s;
+    filter: invert(89%) sepia(0%) saturate(383%) hue-rotate(135deg) brightness(89%) contrast(86%);
 }
 
-.PencilIcon:hover {
+.Icon:hover {
     transform: scale(1.1);
+}
+
+.EditIcon {
+    width: 27px;
 }
 
 .TrashIcon {
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.TrashIcon:hover {
-    transform: scale(1.1);
+    filter: invert(52%) sepia(43%) saturate(2852%) hue-rotate(326deg) brightness(124%) contrast(101%);
 }

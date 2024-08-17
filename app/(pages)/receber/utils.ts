@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 
-const formatFields = (fields: any, hasInstallment: any, apportionments: any) => {    
+const formatFields = (fields: any, hasInstallment: any, apportionments: any, installmentValues: any) => {    
     const data = {
         client: fields.client,
         competence: format(new Date(fields.competence + 'T00:00:00'), 'dd/MM/yyyy'),
@@ -24,7 +24,36 @@ const formatFields = (fields: any, hasInstallment: any, apportionments: any) => 
             payment_date: fields.payment.status ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : "01/02/2024",
             status: fields.payment.status === false ? "" : "Recebido",
             installment: 1,
-        },
+            installment_values: hasInstallment
+            ? installmentValues.map((installment: any) => {
+                return {
+                  value: Number(
+                    parseFloat(
+                      installment.value.replace(/\./g, "").replace(",", ".")
+                    )
+                      .toFixed(2)
+                      .toString()
+                  ),
+                  due_date: format(
+                    new Date(installment.due_date + "T00:00:00"),
+                    "dd/MM/yyyy"
+                  ),
+                };
+              })
+            : [
+                {
+                  value: Number(
+                    parseFloat(fields._value.replace(/\./g, "").replace(",", "."))
+                      .toFixed(2)
+                      .toString()
+                  ),
+                  due_date: format(
+                    new Date(fields.alternative_due_date + "T00:00:00"),
+                    "dd/MM/yyyy"
+                  ),
+                },
+              ],
+          },
         attachment: '',
         apportionment: apportionments.length > 0 ? apportionments.map((currentApportionment: any) => {
             return {

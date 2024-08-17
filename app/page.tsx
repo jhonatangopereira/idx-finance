@@ -1,10 +1,6 @@
 'use client'
 
-import { Suspense } from 'react';
 import Styles from '@/app/page.module.css';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import withAuth from './components/withAuth';
 
 function Content() {

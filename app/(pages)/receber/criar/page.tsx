@@ -3,22 +3,19 @@
 import StylesContainer from '@/app/page.module.css';
 import Styles from './page.module.css';
 
-import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import { createIncome } from '../../../services/api/incomes';
-import { fetchBanks } from '../../../services/api/banks';
-import MessagePopup from '../../../components/MessagePopup/MessagePopup';
-import { createIncomeSchema } from '../../../utils/validations/incomes';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import MessagePopup from '../../../components/MessagePopup/MessagePopup';
+import { createIncome } from '../../../services/api/incomes';
+import { createIncomeSchema } from '../../../utils/validations/incomes';
 import { formatFields } from '../utils';
 
-import { useState, useCallback, useMemo, FormEvent, useEffect, ChangeEvent } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams } from 'next/navigation';
-import { parseCookies } from 'nookies'
+import { parseCookies } from 'nookies';
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
 type ApportionmentType =  {            
@@ -34,9 +31,16 @@ export default function CriarReceita() {
     const [numberOfInstallments, setNumberOfInstallments] = useState(2);
     const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
     const ap = apportionments
-    const [apportionmentsNumber, setApportionmentsNumber] = useState(1);
     const cookies = parseCookies();
-    const { id } = useParams();    
+    const { id } = useParams();
+    const [installmentValues, setInstallmentValues] = useState<any[]>([{
+        due_date: "01/01/2024",
+        value: "0",
+    }, {
+        due_date: "01/01/2024",
+        value: "0",
+    }]);
+    console.log(installmentValues);
     const { register, handleSubmit, formState: { errors }, watch, setValue, resetField } = useForm({
         resolver: yupResolver(createIncomeSchema),
         defaultValues: {
@@ -49,7 +53,7 @@ export default function CriarReceita() {
             financial_category: 0,
             payment: {
                 number_of_installments: "2x",                  
-                interval_between_installments: hasInstallment ? 1 : 1,
+                interval_between_installments: hasInstallment ? 1 : 0,
                 payment_date:  hasInstallment ? '' : '01/01/2024',
                 due_date: hasInstallment ? '' : '01/01/2024',
                 value: "0",
@@ -69,13 +73,11 @@ export default function CriarReceita() {
     });
     const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] = useState(false);
     const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] = useState(false);
-    const [isApportionmentInputChecked, setIsApportionmentInputChecked] = useState(false);
     const [totalValue, setTotalValue] = useState(0);
     const [markAs, setMarkAs] = useState(false);    
     const [attachmentStatus, setAttachment] = useState({
         message: 'Nehum anexo adicionado.'
     });
-    const paymentStatus = watch('payment.status')
     const attachment = watch('attachment');
     const [percentage, setPercentage] = useState(0);
     const [userBanks, setUserBanks] = useState([
@@ -106,7 +108,7 @@ export default function CriarReceita() {
     ), [totalValue, apportionmentValue]);
 
     const getFields = async (fields: any) => {
-        const formatedFields = formatFields(fields, hasInstallment, apportionments);
+        const formatedFields = formatFields(fields, hasInstallment, apportionments, installmentValues);
 
         try {
             await createIncome(cookies.authToken, formatedFields)
@@ -264,14 +266,22 @@ export default function CriarReceita() {
     }, [attachment, setValue]);
 
     const addInstallment = () => {
-        setNumberOfInstallments(previousValue => previousValue += 1);
-        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+        setNumberOfInstallments(previousValue => previousValue + 1);
+        // setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+        setInstallmentValues((previousValues) => [
+            ...previousValues,
+            { value: "", due_date: "" },
+        ]);
     }
 
     const removeInstallment = () => {
-        setNumberOfInstallments(previousValue => previousValue -= 1);
-        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
+        setNumberOfInstallments(previousValue => previousValue - 1);
+        setInstallmentValues((previousValues) => previousValues.slice(0, -1));
     }
+
+    const installmentArray = Array.from({ length: numberOfInstallments }, (_, i) => {
+        return i + 1
+    })
 
     useEffect(() => {
         setValue('payment.number_of_installments', `${numberOfInstallments}x`);
@@ -623,84 +633,90 @@ export default function CriarReceita() {
                                 )*/}
                                 {hasInstallment && (
                                 <section className={Styles.PaymentTerms}>
-                                    <h2>Condições de recebimento</h2>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Parcelamento <span className={Styles.AsterisckSpan}>*</span></label>
-                                         <div className={Styles.InstallmentInput}>
-                                            <input
-                                              className={Styles.Input}
-                                              placeholder='Ex.: 3x'
-                                              type='text'
-                                              id="installmentsIntervalInput"
-                                              {...register("payment.number_of_installments")}
-                                              min={2}
-                                           />
-                                          <div className={Styles.Icons}>
-                                            <button type="button" onClick={addInstallment}>
-                                              <IoMdArrowDropup />
-                                            </button>
-                                            <button type="button" onClick={removeInstallment}>
-                                             <IoMdArrowDropdown />
-                                            </button>
-                                          </div>
-                                         </div>
-                                        {errors.payment?.number_of_installments && <p className={Styles.Error}>{errors.payment.number_of_installments.message}</p>}
-                                    </div> 
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>Valor <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <div className={Styles.ValueInput}>
-                                            <span>R$</span>
-                                            <input
-                                                className={Styles.Input}
-                                                placeholder='Ex.: 120,50'
-                                                type='text'
-                                                disabled
-                                                {...register("payment.value")}
-                                                min={0}
-                                            />                                        
-                                        </div>
-                                        {errors.payment?.value && <p className={Styles.Error}>{errors.payment.value.message}</p>}
-                                    </div>
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>1° data de vencimento <span className={Styles.AsterisckSpan}>*</span></label>
-                                        <input 
-                                            className={Styles.Input}
-                                            placeholder='1° data de vencimento'
-                                            type='date'
-                                            {...register("payment.due_date")}
-                                        />
-                                        {errors.payment?.due_date && <p className={Styles.Error}>{errors.payment.due_date.message}</p>}
-                                    </div>                                                             
-                                    <div className={Styles.LabelInputContainer}>
-                                        <label className={Styles.Label}>
-                                            Intervalo entre parcelas 
-                                            <span className={Styles.AsterisckSpan}>*</span>
-                                        </label>
-                                        <input
-                                            className={Styles.InstallmentsIntervalInput}
-                                            placeholder='Ex.: 30 dias'
-                                            type='number'
-                                            min={0}
-                                            {...register("payment.interval_between_installments")}
-                                        />
-                                        {errors.payment?.interval_between_installments && <p className={Styles.Error}>{errors.payment.interval_between_installments.message}</p>}
-                                    </div>
-                                    <div className={Styles.ReceivedAndInformNsuContainer}>
-                                        {/*<div className={Styles.InformNSU}>
-                                            <span>Informar NSU?</span>
-                                            <div>
-                                                <input type="checkbox"/>
-                                                <label></label>
-                                            </div>
-                                        </div>*/}   
-                                    </div>
-                                    {/*<div className={Styles.RepeatRealise}>
-                                        <span>Repetir lançamento?</span>
-                                        <div>
-                                            <input type="checkbox"/>
-                                            <label></label>
-                                        </div>
-                                    </div>*/}
+                                    {Array.from(
+                      installmentArray,
+                      (_, index) => (
+                        <div
+                          key={index}
+                          className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}
+                        >
+                          <div className={Styles.ValueInputInstallment}>
+                            <label className={Styles.Label}>
+                              Valor da parcela {index + 1}{" "}
+                              <span className={Styles.AsterisckSpan}>*</span>
+                            </label>
+                            <div className={Styles.ValueInput}>
+                              <span>R$</span>
+                              <input
+                                className={Styles.Input}
+                                placeholder="Ex.: 50,00"
+                                type="text"
+                                {...register(
+                                  `payment.installment_values.${index}.value`
+                                )}
+                                min={0}
+                                defaultValue={"0,00"}
+                                onChange={(e) => {
+                                  setValue(
+                                    `payment.installment_values.${index}.value`,
+                                    formatCurrency(
+                                      e.target.value.replace(
+                                        /\D/g,
+                                        ""
+                                      )
+                                    ).toString(),
+                                  );
+                                  setInstallmentValues((previousValues) =>
+                                    previousValues.map((installment, i) =>
+                                      i === index ? { ...installment, value: e.target.value } : installment
+                                    )
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+                          {errors.payment?.installment_values?.[index]
+                            ?.value && (
+                            <p className={Styles.Error}>
+                              {
+                                errors.payment?.installment_values[index]?.value
+                                  ?.message
+                              }
+                            </p>
+                          )}
+                          <div className={Styles.DueDateInput}>
+                            <label className={Styles.Label}>
+                              Data de vencimento da parcela {index + 1}{" "}
+                              <span className={Styles.AsterisckSpan}>*</span>
+                            </label>
+                            <input
+                              className={Styles.Input}
+                              placeholder="Data de vencimento"
+                              type="date"
+                              {...register(
+                                `payment.installment_values.${index}.due_date`
+                              )}
+                              onChange={(e) =>
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index ? { ...installment, due_date: e.target.value } : installment
+                                  )
+                                )
+                              }
+                            />
+                            {errors.payment?.installment_values?.[index]
+                              ?.due_date && (
+                              <p className={Styles.Error}>
+                                {
+                                  errors.payment?.installment_values[index]
+                                    ?.due_date?.message
+                                }
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
                                 </section> 
                                 )}        
                                 <section className={Styles.AddProff}>
