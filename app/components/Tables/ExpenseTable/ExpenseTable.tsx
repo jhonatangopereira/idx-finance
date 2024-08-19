@@ -101,6 +101,7 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                                     value={Number(account.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     situation={account.status}
                                     document_number={account.document_number ?? "-"}
+                                    attachment_data={account.attachment_data ?? null}
                                     linkTo={`${linkTo}/detalhes/${account.id}`}
                                     id={Number(account.id)}
                                     type="expense"

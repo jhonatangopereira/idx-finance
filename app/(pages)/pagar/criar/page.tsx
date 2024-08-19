@@ -11,30 +11,60 @@ import Styles from "./page.module.css";
 import { DataType } from "./types";
 
 import { yupResolver } from "@hookform/resolvers/yup";
-import { format, previousDay } from "date-fns";
+import { format } from "date-fns";
 import { parseCookies } from "nookies";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
-import { preconnect } from "react-dom";
 
 export default function CreateAccount() {
-  const [hasInstallment, setHasInstallment] = useState(false);
-  console.log(hasInstallment);
-  const [hasBankSlip, setHasBankSlip] = useState(false);
-  const [markAs, setMarkAs] = useState(false);
+  // Apportionments
   const [apportionments, setApportionments] = useState<any[]>([]);
   const ap = apportionments;
 
-  const [installmentValues, setInstallmentValues] = useState<any[]>([{
-    due_date: "01/01/2024",
-    value: "0",
-  }, {
-    due_date: "01/01/2024",
-    value: "0",
-  }]);
-  console.log(installmentValues);
- 
+  // Attachment
+  const [attachmentStatus, setAttachmentStatus] = useState({
+    message: "Nehum anexo adicionado.",
+  });
+
+  // Mark as paid
+  const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [dueDate, setDueDate] = useState("");
+
+  // Mark installments
+  const [hasInstallment, setHasInstallment] = useState(false);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
+  const [installmentValues, setInstallmentValues] = useState<any[]>([
+    {
+      due_date: "01/01/2024",
+      value: "0",
+    },
+    {
+      due_date: "01/01/2024",
+      value: "0",
+    },
+  ]);
+
+  // Mark bank slip
+  const [hasBankSlip, setHasBankSlip] = useState(false);
+
+  // Selects
+  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
+  const [userCategories, setUserCategories] = useState([
+    { id: 0, description: "" },
+  ]);
+  const [userCostCenters, setUserCostCenters] = useState([
+    { id: 0, description: "" },
+  ]);
+  const [userSuppliers, setUserSuppliers] = useState([{ id: 0, name: "" }]);
+
+  // Popups
+  const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] =
+    useState(false);
+  const [isCostCenterPopupVisible, setIsCostCenterPopupVisible] =
+    useState(false);
+  const [isSupplierPopupVisible, setIsSupplierPopupVisible] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -74,21 +104,15 @@ export default function CreateAccount() {
       ],
     },
   });
-  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
-  const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] =
-    useState(false);
-  const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] =
-    useState(false);
-  const [isSupplierPopupVisible, setIsSupplierPopupVisible] = useState(false);
-  const [attachmentStatus, setAttachment] = useState({
-    message: "Nehum anexo adicionado.",
-  });
+  // console.log(errors);
+
   const attachment = watch("attachment");
   const paymentStatus = watch("payment.status");
+  const _value = watch("_value");
 
   const getData = async (fields: any) => {
     const cookies = parseCookies();
-    
+
     const data: DataType = {
       supplier: fields.supplier,
       competence: format(
@@ -108,7 +132,7 @@ export default function CreateAccount() {
       financial_category: fields.financial_category,
       category: fields.financial_category,
       cost_center: Number(fields.cost_center),
-      document_number: fields.document_number,  
+      document_number: fields.document_number,
       financial_account: paymentStatus ? fields.financial_account : null,
       interval_between_installments: 0,
       bank_slip: fields.bank_slip,
@@ -176,39 +200,29 @@ export default function CreateAccount() {
 
     if (fields.attachment.length > 0) {
       const file = fields.attachment[0];
-      const reader = new FileReader();
+      if (file instanceof File || file instanceof Blob) {
+        const attachmentDataURL = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target) {
+              resolve(event.target.result);
+            } else {
+              reject(new Error("Failed to load file"));
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+        data.attachment = attachmentDataURL as string;
+      }
 
-      reader.onload = async (event) => {
-        if (event.target) {
-          data.attachment = event.target.result as string;
-        }
-
-        try {
-          await createExpense(data, cookies.authToken);
-          alert("Nova despesa criada com sucesso!");
-        } catch (err) {
-          alert("Falha ao criar a nova despesa.");
-        }
-      };
-      reader.readAsDataURL(file);
-    } else {
       try {
-        const response = await createExpense(data, cookies.authToken);
+        await createExpense(data, cookies.authToken);
         alert("Nova despesa criada com sucesso!");
       } catch (err) {
         alert("Falha ao criar a nova despesa.");
       }
     }
   };
-
-  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
-  const [useCategories, setUserCategories] = useState([
-    { id: 0, description: "" },
-  ]);
-  const [userCostCenters, setUserCostCenters] = useState([
-    { id: 0, description: "" },
-  ]);
-  const [userSuppliers, setUserSuppliers] = useState([{ id: 0, name: "" }]);
 
   const fetchBanks = async () => {
     const cookies = parseCookies();
@@ -235,14 +249,10 @@ export default function CreateAccount() {
 
   useEffect(() => {
     fetchBanks();
-  }, [isCreateCategoryPopupVisible, isCostCenterPopupVisibe]);
-
-  const _value = watch("_value");
+  }, [isCreateCategoryPopupVisible, isCostCenterPopupVisible]);
 
   useEffect(() => {
-    let value = Number(
-      stringToCurrency(_value!)
-    )
+    let value = Number(stringToCurrency(_value!))
       .toFixed(2)
       .toString()
       .replace(".", ",");
@@ -256,25 +266,29 @@ export default function CreateAccount() {
   useEffect(() => {
     if (hasInstallment) {
       setValue("payment.due_date", "");
-      setValue("alternative_due_date", "01/01/2024");
+      // setValue("alternative_due_date", "01/01/2024");
     } else {
       setValue("payment.due_date", "01/01/2024");
-      setValue("alternative_due_date", "");
+      // setValue("alternative_due_date", "");
     }
 
-    if (markAs) {
+    if (markAsPaid) {
       setValue("payment.payment_date", "");
+      // setValue("alternative_due_date", "01/01/2024");
     } else {
       setValue("payment.payment_date", "01/01/2024");
+      // setValue("alternative_due_date", "");
     }
-  }, [hasInstallment, markAs]);
+  }, [hasInstallment, markAsPaid]);
 
   useEffect(() => {
     if (attachment !== null && attachment.length > 0) {
-      setAttachment({ message: `Anexo adicionado: ${attachment[0].name}` });
+      setAttachmentStatus({
+        message: `Anexo adicionado: ${attachment[0].name}`,
+      });
     } else {
       setValue("attachment", "");
-      setAttachment({ message: `Nenhum anexo adicionado.` });
+      setAttachmentStatus({ message: `Nenhum anexo adicionado.` });
     }
 
     setValue("competence", new Date().toISOString().split("T")[0]);
@@ -300,14 +314,11 @@ export default function CreateAccount() {
     setApportionments(filteredApportionments);
   };
 
-  const [firstValue, setFirstValue] = useState("");
-
   const handle_ValueInputChange = (
     event: ChangeEvent<HTMLInputElement>
   ): void => {
     const inputValue = event.target.value.replace(/\D/g, "");
     const formattedValue = formatCurrency(inputValue);
-    setFirstValue(formattedValue);
     setValue("_value", formattedValue);
   };
 
@@ -317,7 +328,6 @@ export default function CreateAccount() {
   ): void => {
     const inputValue = event.target.value.replace(/\D/g, "");
     const formattedValue = formatCurrency(inputValue);
-    setFirstValue(formattedValue);
     setValue(`apportionment.${id}.percentage`, formattedValue);
   };
 
@@ -351,22 +361,21 @@ export default function CreateAccount() {
       ]);
     }
   };
-  
+
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
       setNumberOfInstallments((previousValue) => previousValue - 1);
-      setInstallmentValues((previousValues) =>
-        previousValues.slice(0, -1)
-      );
+      setInstallmentValues((previousValues) => previousValues.slice(0, -1));
     }
   };
 
-  const installmentArray = Array.from({ length: numberOfInstallments }, (_, i) => {
-    return i + 1
-  })
+  const installmentArray = Array.from(
+    { length: numberOfInstallments },
+    (_, i) => {
+      return i + 1;
+    }
+  );
 
-  console.log(errors);
-  
   useEffect(() => {
     setValue("number_of_installments", `${numberOfInstallments}x`);
   }, [numberOfInstallments]);
@@ -380,7 +389,7 @@ export default function CreateAccount() {
           />
         </div>
       )}
-      {isCostCenterPopupVisibe && (
+      {isCostCenterPopupVisible && (
         <div className="ModalBackground">
           <CreateCostCenterPopup closeFunction={setIsCostCenterPopupVisible} />
         </div>
@@ -494,7 +503,7 @@ export default function CreateAccount() {
                           <option value={0} selected>
                             Selecione o banco
                           </option>
-                          {userBanks.length >= 0 &&
+                          {userBanks.length > 0 &&
                             userBanks.map((bank, index) => (
                               <option value={bank.id} key={index}>
                                 {bank.bank_name}
@@ -575,6 +584,10 @@ export default function CreateAccount() {
                         placeholder="Vencimento"
                         type="date"
                         {...register("alternative_due_date")}
+                        onChange={(e) => {
+                          console.log("DUE DATE ALTERADO: ", e.target.value);
+                          // setDueDate(e.target.value);
+                        }}
                       />
                       {errors.alternative_due_date && (
                         <p className={Styles.Error}>
@@ -592,9 +605,9 @@ export default function CreateAccount() {
                       {...register("financial_category")}
                     >
                       <option value={0}>Selecione a categoria</option>
-                      {useCategories !== undefined &&
-                        useCategories.length >= 1 &&
-                        useCategories.map((category, index) => (
+                      {userCategories !== undefined &&
+                        userCategories.length >= 1 &&
+                        userCategories.map((category, index) => (
                           <option value={category.id} key={index}>
                             {category.description}
                           </option>
@@ -684,7 +697,6 @@ export default function CreateAccount() {
                           type="text"
                           id="installmentsIntervalInput"
                           {...register("number_of_installments")}
-                          
                         />
                         <div className={Styles.Icons}>
                           <button type="button" onClick={addInstallment}>
@@ -701,90 +713,93 @@ export default function CreateAccount() {
                         </p>
                       )}
                     </div>
-                    {Array.from(
-                      installmentArray,
-                      (_, index) => (
-                        <div
-                          key={index}
-                          className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}
-                        >
-                          <div className={Styles.ValueInputInstallment}>
-                            <label className={Styles.Label}>
-                              Valor da parcela {index + 1}{" "}
-                              <span className={Styles.AsterisckSpan}>*</span>
-                            </label>
-                            <div className={Styles.ValueInput}>
-                              <span>R$</span>
-                              <input
-                                className={Styles.Input}
-                                placeholder="Ex.: 50,00"
-                                type="text"
-                                {...register(
-                                  `payment.installment_values.${index}.value`
-                                )}
-                                min={0}
-                                defaultValue={"0,00"}
-                                onChange={(e) => {
-                                  setValue(
-                                    `payment.installment_values.${index}.value`,
-                                    formatCurrency(
-                                      e.target.value.replace(
-                                        /\D/g,
-                                        ""
-                                      )
-                                    ).toString(),
-                                  );
-                                  setInstallmentValues((previousValues) =>
-                                    previousValues.map((installment, i) =>
-                                      i === index ? { ...installment, value: e.target.value } : installment
-                                    )
-                                  );
-                                }}
-                              />
-                            </div>
+                    {Array.from(installmentArray, (_, index) => (
+                      <div
+                        key={index}
+                        className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}
+                      >
+                        <div className={Styles.ValueInputInstallment}>
+                          <label className={Styles.Label}>
+                            Valor da parcela {index + 1}{" "}
+                            <span className={Styles.AsterisckSpan}>*</span>
+                          </label>
+                          <div className={Styles.ValueInput}>
+                            <span>R$</span>
+                            <input
+                              className={Styles.Input}
+                              placeholder="Ex.: 50,00"
+                              type="text"
+                              {...register(
+                                `payment.installment_values.${index}.value`
+                              )}
+                              min={0}
+                              defaultValue={"0,00"}
+                              onChange={(e) => {
+                                setValue(
+                                  `payment.installment_values.${index}.value`,
+                                  formatCurrency(
+                                    e.target.value.replace(/\D/g, "")
+                                  ).toString()
+                                );
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index
+                                      ? {
+                                          ...installment,
+                                          value: e.target.value,
+                                        }
+                                      : installment
+                                  )
+                                );
+                              }}
+                            />
                           </div>
+                        </div>
+                        {errors.payment?.installment_values?.[index]?.value && (
+                          <p className={Styles.Error}>
+                            {
+                              errors.payment?.installment_values[index]?.value
+                                ?.message
+                            }
+                          </p>
+                        )}
+                        <div className={Styles.DueDateInput}>
+                          <label className={Styles.Label}>
+                            Data de vencimento da parcela {index + 1}{" "}
+                            <span className={Styles.AsterisckSpan}>*</span>
+                          </label>
+                          <input
+                            className={Styles.Input}
+                            placeholder="Data de vencimento"
+                            type="date"
+                            {...register(
+                              `payment.installment_values.${index}.due_date`
+                            )}
+                            onChange={(e) =>
+                              setInstallmentValues((previousValues) =>
+                                previousValues.map((installment, i) =>
+                                  i === index
+                                    ? {
+                                        ...installment,
+                                        due_date: e.target.value,
+                                      }
+                                    : installment
+                                )
+                              )
+                            }
+                          />
                           {errors.payment?.installment_values?.[index]
-                            ?.value && (
+                            ?.due_date && (
                             <p className={Styles.Error}>
                               {
-                                errors.payment?.installment_values[index]?.value
-                                  ?.message
+                                errors.payment?.installment_values[index]
+                                  ?.due_date?.message
                               }
                             </p>
                           )}
-                          <div className={Styles.DueDateInput}>
-                            <label className={Styles.Label}>
-                              Data de vencimento da parcela {index + 1}{" "}
-                              <span className={Styles.AsterisckSpan}>*</span>
-                            </label>
-                            <input
-                              className={Styles.Input}
-                              placeholder="Data de vencimento"
-                              type="date"
-                              {...register(
-                                `payment.installment_values.${index}.due_date`
-                              )}
-                              onChange={(e) =>
-                                setInstallmentValues((previousValues) =>
-                                  previousValues.map((installment, i) =>
-                                    i === index ? { ...installment, due_date: e.target.value } : installment
-                                  )
-                                )
-                              }
-                            />
-                            {errors.payment?.installment_values?.[index]
-                              ?.due_date && (
-                              <p className={Styles.Error}>
-                                {
-                                  errors.payment?.installment_values[index]
-                                    ?.due_date?.message
-                                }
-                              </p>
-                            )}
-                          </div>
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </section>
                 )}
                 <section>
@@ -837,8 +852,8 @@ export default function CreateAccount() {
                                 }
                               >
                                 <option value={0}>Selecione a categoria</option>
-                                {useCategories.length >= 1 &&
-                                  useCategories.map((category, index) => (
+                                {userCategories.length >= 1 &&
+                                  userCategories.map((category, index) => (
                                     <option value={category.id} key={index}>
                                       {category.description}
                                     </option>
@@ -942,7 +957,6 @@ export default function CreateAccount() {
                                             e,
                                             index
                                           );
-                                          console.log(e.target.value);
                                           return i === index
                                             ? {
                                                 ...apportionment,
@@ -1037,31 +1051,39 @@ export default function CreateAccount() {
                             <span>
                               Valor rateado:{" "}
                               <b>
-                                {apportionments[index].value ? transformStringToNumber(
-                                  apportionments[index].value
-                                ).toLocaleString("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                }) : "0,00"}
+                                {apportionments[index].value
+                                  ? transformStringToNumber(
+                                      apportionments[index].value
+                                    ).toLocaleString("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    })
+                                  : "0,00"}
                               </b>
                             </span>
                             <span>
                               A ratear:{" "}
                               <b>
-                                {apportionments[index].value ? (
-                                  transformStringToNumber(_value || "") -
-                                  transformStringToNumber(
-                                    apportionments[index].value
-                                  )
-                                ).toLocaleString("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                }) : "0,00"}{" "}
+                                {apportionments[index].value
+                                  ? (
+                                      transformStringToNumber(_value || "") -
+                                      transformStringToNumber(
+                                        apportionments[index].value
+                                      )
+                                    ).toLocaleString("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    })
+                                  : "0,00"}{" "}
                                 (
-                                {apportionments[index].value ? (100 -
-                                  transformStringToNumber(
-                                    apportionments[index].percentage
-                                  )).toFixed(2) : 0}
+                                {apportionments[index].value
+                                  ? (
+                                      100 -
+                                      transformStringToNumber(
+                                        apportionments[index].percentage
+                                      )
+                                    ).toFixed(2)
+                                  : 0}
                                 %){" "}
                               </b>
                             </span>
@@ -1086,9 +1108,11 @@ export default function CreateAccount() {
                     <div>
                       <input
                         type="checkbox"
-                        onInput={() =>
-                          setMarkAs((previousValue) => !previousValue)
-                        }
+                        onInput={() => {
+                          console.log("MARCADO COMO PAGO: ", dueDate);
+                          setMarkAsPaid((previousValue) => !previousValue);
+                          // setValue("alternative_due_date", dueDate);
+                        }}
                         id="receveid"
                         {...register("payment.status")}
                       />
@@ -1097,9 +1121,8 @@ export default function CreateAccount() {
                         type="checkbox"
                         id="hasInstallment"
                         onInput={() => {
-                            setHasInstallment((previousValue) => !previousValue);
-                          }
-                        }
+                          setHasInstallment((previousValue) => !previousValue);
+                        }}
                       />
                       <label htmlFor="hasInstallment">Parcelado</label>
                       <input

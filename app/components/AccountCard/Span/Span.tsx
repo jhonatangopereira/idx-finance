@@ -1,7 +1,7 @@
 import Styles from './component.module.css';
 import { SpanProps } from './types';
 
-export default function Span ({ children, situation }: SpanProps) {
+export default function Span ({ children, situation }: Readonly<SpanProps>) {
     let situationStyle: string;
     switch (situation.toUpperCase()) {
         case 'PAGO':

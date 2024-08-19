@@ -12,12 +12,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { parseCookies } from "nookies";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 import { DataType } from "./types";
 
 export default function Pagar() {
+  const { id } = useParams();
+
   type ApportionmentType = {
     reference_code: string;
     financial_category: number;
@@ -25,47 +27,57 @@ export default function Pagar() {
     percentage: string;
     cost_center: number;
   };
+  
+  // Apportionments
   const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
-  const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
   const ap = apportionments;
   
-  const [hasInstallment, setHasInstallment] = useState(false);
-  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
-  const [installmentValues, setInstallmentValues] = useState<any[]>([{
-    due_date: "01/01/2024",
-    value: "0",
-  }, {
-    due_date: "01/01/2024",
-    value: "0",
-  }]);
-  console.log(hasInstallment);
-  console.log(installmentValues);
-
-  const { id } = useParams();
-  const [markAs, setMarkAs] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const [data, setData] = useState();
-  const [isApportionmentInputChecked, setIsApportionmentInputChecked] =
-    useState(false);
-  const [totalValue, setTotalValue] = useState(0);
-  const [percentage, setPercentage] = useState(0);
-  const [hasBankSlip, setHasBankSlip] = useState(false);
-  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
-  const [attachmentStatus, setAttachment] = useState({
+  // Attachment
+  const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
+  console.log(attachmentImageUrl);
+  const [attachmentStatus, setAttachmentStatus] = useState({
     message: "Nehum anexo adicionado.",
   });
-  const [useCategories, setUserCategories] = useState([
+
+  // Mark as paid
+  const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [dueDate, setDueDate] = useState("");
+  console.log(dueDate);
+
+  // Mark installments
+  const [hasInstallment, setHasInstallment] = useState(false);
+  const [numberOfInstallments, setNumberOfInstallments] = useState(2);
+  const [installmentValues, setInstallmentValues] = useState<any[]>([
+    {
+      due_date: "01/01/2024",
+      value: "0",
+    },
+    {
+      due_date: "01/01/2024",
+      value: "0",
+    },
+  ]);
+
+  // Mark bank slip
+  const [hasBankSlip, setHasBankSlip] = useState(false);
+  
+  // Selects
+  const [userBanks, setUserBanks] = useState([{ id: 0, bank_name: "" }]);
+  const [userCategories, setUserCategories] = useState([
     { id: 0, description: "" },
   ]);
   const [userCostCenters, setUserCostCenters] = useState([
     { id: 0, description: "" },
   ]);
   const [userSuppliers, setUserSuppliers] = useState([{ id: 0, name: "" }]);
+
+  // Popups
   const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] =
     useState(false);
-  const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] =
+  const [isCostCenterPopupVisible, setIsCostCenterPopupVisible] =
     useState(false);
-  const [isSupplierPopupVisible, setIsSupplierPopupVisible] = useState(false);
+  const [isSupplierPopupVisible, setIsSupplierPopupVisible] =
+    useState(false);
 
   const {
     register,
@@ -73,8 +85,7 @@ export default function Pagar() {
     formState: { errors },
     watch,
     setValue,
-    resetField,
-    getValues,
+    resetField
   } = useForm({
     resolver: yupResolver(createExpenseSchema),
     defaultValues: {
@@ -102,13 +113,15 @@ export default function Pagar() {
       ],
     },
   });
-
-  const attachment = watch("attachment");
-
   console.log(errors);
 
+  const attachment = watch("attachment");
+  const _value = watch("_value");
+  const number_of_installments = watch("number_of_installments");
+
   const getData = async (fields: any) => {
-    const isPaid = (document.querySelector("#receveid") as HTMLInputElement)?.checked;
+    const isPaid = (document.querySelector("#receveid") as HTMLInputElement)
+      ?.checked;
     const data: DataType = {
       supplier: fields.supplier,
       competence: format(
@@ -134,11 +147,12 @@ export default function Pagar() {
       financial_account: isPaid ? fields.financial_account : null,
       payment: {
         payment_method: isPaid ? fields.payment.payment_method : null,
-        payment_date: isPaid ?
-        format(
-            new Date(fields.payment.payment_date + "T00:00:00"),
-            "dd/MM/yyyy"
-        ) : null,
+        payment_date: isPaid
+          ? format(
+              new Date(fields.payment.payment_date + "T00:00:00"),
+              "dd/MM/yyyy"
+            )
+          : null,
         status: isPaid === false ? "" : "Pago",
         installment_values: hasInstallment
           ? installmentValues.map((installment: any) => {
@@ -173,21 +187,29 @@ export default function Pagar() {
       apportionment:
         apportionments.length > 0
           ? apportionments.map((a) => {
-            console.log(a.percentage);
-            console.log(a.value);
+              console.log(a.percentage);
+              console.log(a.value);
               return {
                 financial_category: Number(a.financial_category),
                 cost_center: Number(a.cost_center),
-                percentage: a.percentage.search(",") > 0 ? Number(
-                  parseFloat(a.percentage.replace(".", "").replace(",", "."))
-                    .toFixed(2)
-                    .toString()
-                ) : parseFloat(a.percentage),
-                value: a.value.search(",") > 0 ? Number(
-                  parseFloat(a.value.replace(".", "").replace(",", "."))
-                    .toFixed(2)
-                    .toString()
-                ) : parseFloat(a.value),
+                percentage:
+                  a.percentage.search(",") > 0
+                    ? Number(
+                        parseFloat(
+                          a.percentage.replace(".", "").replace(",", ".")
+                        )
+                          .toFixed(2)
+                          .toString()
+                      )
+                    : parseFloat(a.percentage),
+                value:
+                  a.value.search(",") > 0
+                    ? Number(
+                        parseFloat(a.value.replace(".", "").replace(",", "."))
+                          .toFixed(2)
+                          .toString()
+                      )
+                    : parseFloat(a.value),
                 reference_code: "-",
               };
             })
@@ -287,10 +309,12 @@ export default function Pagar() {
                 );
                 setValue(
                   `apportionment.${index}.percentage`,
-                  parseFloat(a.percentage).toLocaleString("pt-BR", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }).replace(".", ",")
+                  parseFloat(a.percentage)
+                    .toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                    .replace(".", ",")
                 );
                 setValue(`apportionment.${index}.cost_center`, a.cost_center);
                 setValue(
@@ -303,28 +327,32 @@ export default function Pagar() {
                 return a;
               })
             );
-            console.log(apportionments);
-            setIsApportionmentInputChecked(true);
-          } else {
-            setIsApportionmentInputChecked(false);
           }
 
           if (data.payment.length > 1) {
             setHasInstallment(true);
-            setInstallmentValues(data.payment.map((payment:any, index:number) => ({
-              value: parseFloat(payment.value).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }),
-              due_date: payment.due_date,
-            })));
-            data.payment.map((payment:any, index:number) => {
-              setValue(`payment.installment_values.${index}.due_date`, payment.due_date);
-              setValue(`payment.installment_values.${index}.value`, parseFloat(payment.value).toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }));
-            })
+            setInstallmentValues(
+              data.payment.map((payment: any, index: number) => ({
+                value: parseFloat(payment.value).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+                due_date: payment.due_date,
+              }))
+            );
+            data.payment.map((payment: any, index: number) => {
+              setValue(
+                `payment.installment_values.${index}.due_date`,
+                payment.due_date
+              );
+              setValue(
+                `payment.installment_values.${index}.value`,
+                parseFloat(payment.value).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              );
+            });
             setValue("number_of_installments", `${data.payment.length}x`);
             setNumberOfInstallments(data.payment.length);
           } else {
@@ -332,9 +360,9 @@ export default function Pagar() {
           }
 
           if (data.status !== "Pago") {
-            setMarkAs(false);
+            setMarkAsPaid(false);
           } else if (data.status === "Pago") {
-            setMarkAs(true);
+            setMarkAsPaid(true);
           }
           setValue("payment.payment_date", data.payment[0].payment_date);
         });
@@ -392,10 +420,7 @@ export default function Pagar() {
 
   useEffect(() => {
     fetchBanks();
-  }, [isCreateCategoryPopupVisible, isCostCenterPopupVisibe]);
-
-  const _value = watch("_value");
-  const number_of_installments = watch("number_of_installments");
+  }, [isCreateCategoryPopupVisible, isCostCenterPopupVisible]);
 
   useEffect(() => {
     let value = stringToCurrency(_value!)
@@ -409,31 +434,11 @@ export default function Pagar() {
     setValue("payment.value", formattedValue);
   }, [_value, number_of_installments, setValue]);
 
-  const onInstallMentIntervalFielMouseEnter = () => {
-    let installMentsIntervalInput = document.getElementById(
-      "installmentsIntervalInput"
-    ) as HTMLInputElement;
-    installMentsIntervalInput.value =
-      installMentsIntervalInput.value.split("x")[0];
-    installMentsIntervalInput.setAttribute("type", "number");
-  };
-
-  const onInstallMentIntervalFielMouseLeave = () => {
-    let installMentsIntervalInput = document.getElementById(
-      "installmentsIntervalInput"
-    ) as HTMLInputElement;
-    installMentsIntervalInput.setAttribute("type", "text");
-    installMentsIntervalInput.value = `${installMentsIntervalInput.value}x`;
-  };
-
-  const [firstValue, setFirstValue] = useState("");
-
   const handle_ValueInputChange = (
     event: ChangeEvent<HTMLInputElement>
   ): void => {
     const inputValue = event.target.value.replace(/\D/g, "");
     const formattedValue = formatCurrency(inputValue);
-    setFirstValue(formattedValue);
     setValue("_value", formattedValue);
   };
 
@@ -443,7 +448,6 @@ export default function Pagar() {
   ): void => {
     const inputValue = event.target.value.replace(/\D/g, "");
     const formattedValue = formatCurrency(inputValue);
-    setFirstValue(formattedValue);
     setValue(`apportionment.${id}.percentage`, formattedValue);
   };
 
@@ -470,10 +474,10 @@ export default function Pagar() {
       attachment !== undefined &&
       attachment.length > 0
     ) {
-      setAttachment({ message: `Anexo já adicionado.` });
+      setAttachmentStatus({ message: `Anexo já adicionado.` });
     } else {
       setValue("attachment", "");
-      setAttachment({ message: `Nenhum anexo adicionado.` });
+      setAttachmentStatus({ message: `Nenhum anexo adicionado.` });
     }
 
     setValue("competence", new Date().toISOString().split("T")[0]);
@@ -496,21 +500,26 @@ export default function Pagar() {
       ]);
     }
   };
-  
+
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
       setNumberOfInstallments((previousValue) => previousValue - 1);
-      setInstallmentValues((previousValues) =>
-        previousValues.slice(0, -1)
+      setInstallmentValues((previousValues) => previousValues.slice(0, -1));
+      resetField(
+        `payment.installment_values.${numberOfInstallments - 1}.value`
       );
-      resetField(`payment.installment_values.${numberOfInstallments - 1}.value`);
-      resetField(`payment.installment_values.${numberOfInstallments - 1}.due_date`);
+      resetField(
+        `payment.installment_values.${numberOfInstallments - 1}.due_date`
+      );
     }
   };
 
-  const installmentArray = Array.from({ length: numberOfInstallments }, (_, i) => {
-    return i + 1
-  })
+  const installmentArray = Array.from(
+    { length: numberOfInstallments },
+    (_, i) => {
+      return i + 1;
+    }
+  );
 
   return (
     <>
@@ -521,7 +530,7 @@ export default function Pagar() {
           />
         </div>
       )}
-      {isCostCenterPopupVisibe && (
+      {isCostCenterPopupVisible && (
         <div className="ModalBackground">
           <CreateCostCenterPopup closeFunction={setIsCostCenterPopupVisible} />
         </div>
@@ -618,7 +627,7 @@ export default function Pagar() {
                       <p className={Styles.Error}>{errors._value.message}</p>
                     )}
                   </div>
-                  {markAs && (
+                  {markAsPaid && (
                     <>
                       <div className={Styles.LabelInputContainer}>
                         <label className={Styles.Label}>
@@ -630,9 +639,7 @@ export default function Pagar() {
                           {...register("financial_account")}
                           defaultValue={0}
                         >
-                          <option value={0}>
-                            Selecione o banco
-                          </option>
+                          <option value={0}>Selecione o banco</option>
                           {userBanks.length > 0 &&
                             userBanks.map((bank, index) => (
                               <option value={bank.id} key={index}>
@@ -714,6 +721,10 @@ export default function Pagar() {
                         placeholder="Vencimento"
                         type="date"
                         {...register("alternative_due_date")}
+                        onChange={(e) => {
+                          console.log(e.target.value);
+                          setDueDate(e.target.value); 
+                        }}
                       />
                       {errors.alternative_due_date && (
                         <p className={Styles.Error}>
@@ -731,8 +742,8 @@ export default function Pagar() {
                       {...register("financial_category")}
                     >
                       <option value={0}>Selecione a categoria</option>
-                      {useCategories.length >= 1 &&
-                        useCategories.map((category, index) => (
+                      {userCategories.length >= 1 &&
+                        userCategories.map((category, index) => (
                           <option value={category.id} key={index}>
                             {category.description}
                           </option>
@@ -838,89 +849,92 @@ export default function Pagar() {
                         </p>
                       )}
                     </div>
-                    {Array.from(
-                      installmentArray,
-                      (_, index) => (
-                        <div
-                          key={index}
-                          className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}
-                        >
-                          <div className={Styles.ValueInputInstallment}>
-                            <label className={Styles.Label}>
-                              Valor da parcela {index + 1}{" "}
-                              <span className={Styles.AsterisckSpan}>*</span>
-                            </label>
-                            <div className={Styles.ValueInput}>
-                              <span>R$</span>
-                              <input
-                                className={Styles.Input}
-                                placeholder="Ex.: 50,00"
-                                type="text"
-                                {...register(
-                                  `payment.installment_values.${index}.value`
-                                )}
-                                min={0}
-                                onChange={(e) => {
-                                  setValue(
-                                    `payment.installment_values.${index}.value`,
-                                    formatCurrency(
-                                      e.target.value.replace(
-                                        /\D/g,
-                                        ""
-                                      )
-                                    ).toString(),
-                                  );
-                                  setInstallmentValues((previousValues) =>
-                                    previousValues.map((installment, i) =>
-                                      i === index ? { ...installment, value: e.target.value } : installment
-                                    )
-                                  );
-                                }}
-                              />
-                            </div>
+                    {Array.from(installmentArray, (_, index) => (
+                      <div
+                        key={index}
+                        className={`${Styles.LabelInputContainer} ${Styles.InstallmentContainer}`}
+                      >
+                        <div className={Styles.ValueInputInstallment}>
+                          <label className={Styles.Label}>
+                            Valor da parcela {index + 1}{" "}
+                            <span className={Styles.AsterisckSpan}>*</span>
+                          </label>
+                          <div className={Styles.ValueInput}>
+                            <span>R$</span>
+                            <input
+                              className={Styles.Input}
+                              placeholder="Ex.: 50,00"
+                              type="text"
+                              {...register(
+                                `payment.installment_values.${index}.value`
+                              )}
+                              min={0}
+                              onChange={(e) => {
+                                setValue(
+                                  `payment.installment_values.${index}.value`,
+                                  formatCurrency(
+                                    e.target.value.replace(/\D/g, "")
+                                  ).toString()
+                                );
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index
+                                      ? {
+                                          ...installment,
+                                          value: e.target.value,
+                                        }
+                                      : installment
+                                  )
+                                );
+                              }}
+                            />
                           </div>
+                        </div>
+                        {errors.payment?.installment_values?.[index]?.value && (
+                          <p className={Styles.Error}>
+                            {
+                              errors.payment?.installment_values[index]?.value
+                                ?.message
+                            }
+                          </p>
+                        )}
+                        <div className={Styles.DueDateInput}>
+                          <label className={Styles.Label}>
+                            Data de vencimento da parcela {index + 1}{" "}
+                            <span className={Styles.AsterisckSpan}>*</span>
+                          </label>
+                          <input
+                            className={Styles.Input}
+                            placeholder="Data de vencimento"
+                            type="date"
+                            {...register(
+                              `payment.installment_values.${index}.due_date`
+                            )}
+                            onChange={(e) =>
+                              setInstallmentValues((previousValues) =>
+                                previousValues.map((installment, i) =>
+                                  i === index
+                                    ? {
+                                        ...installment,
+                                        due_date: e.target.value,
+                                      }
+                                    : installment
+                                )
+                              )
+                            }
+                          />
                           {errors.payment?.installment_values?.[index]
-                            ?.value && (
+                            ?.due_date && (
                             <p className={Styles.Error}>
                               {
-                                errors.payment?.installment_values[index]?.value
-                                  ?.message
+                                errors.payment?.installment_values[index]
+                                  ?.due_date?.message
                               }
                             </p>
                           )}
-                          <div className={Styles.DueDateInput}>
-                            <label className={Styles.Label}>
-                              Data de vencimento da parcela {index + 1}{" "}
-                              <span className={Styles.AsterisckSpan}>*</span>
-                            </label>
-                            <input
-                              className={Styles.Input}
-                              placeholder="Data de vencimento"
-                              type="date"
-                              {...register(
-                                `payment.installment_values.${index}.due_date`
-                              )}
-                              onChange={(e) =>
-                                setInstallmentValues((previousValues) =>
-                                  previousValues.map((installment, i) =>
-                                    i === index ? { ...installment, due_date: e.target.value } : installment
-                                  )
-                                )
-                              }
-                            />
-                            {errors.payment?.installment_values?.[index]
-                              ?.due_date && (
-                              <p className={Styles.Error}>
-                                {
-                                  errors.payment?.installment_values[index]
-                                    ?.due_date?.message
-                                }
-                              </p>
-                            )}
-                          </div>
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </section>
                 )}
                 <section>
@@ -973,8 +987,8 @@ export default function Pagar() {
                                 }
                               >
                                 <option value={0}>Selecione a categoria</option>
-                                {useCategories.length >= 1 &&
-                                  useCategories.map((category, index) => (
+                                {userCategories.length >= 1 &&
+                                  userCategories.map((category, index) => (
                                     <option value={category.id} key={index}>
                                       {category.description}
                                     </option>
@@ -1258,7 +1272,7 @@ export default function Pagar() {
                       ? "Editar anexo"
                       : "Adicionar anexo"}
                   </button>
-                  <input type="file" id="file" {...register("attachment")} />
+                  <input type="file" id="file" {...register("attachment")}/>
                   <p>{attachmentStatus.message}</p>
                   {attachmentImageUrl !== "" && (
                     <a href={attachmentImageUrl} download="Anexo">
@@ -1277,9 +1291,9 @@ export default function Pagar() {
                         type="checkbox"
                         id="receveid"
                         {...register("payment.status")}
-                        checked={markAs}
+                        checked={markAsPaid}
                         onChange={() =>
-                          setMarkAs((previousValue) => !previousValue)
+                          setMarkAsPaid((previousValue) => !previousValue)
                         }
                       />
                       <label htmlFor="receveid">Pago</label>

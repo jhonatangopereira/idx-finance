@@ -88,8 +88,7 @@ export default function IncomeTable({ data, linkTo }: TableComponentProps) {
                                     value={Number(account.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     situation={account.status}
                                     linkTo={`${linkTo}/detalhes/${account.id}`}
-                                    type="income"
-                                />
+                                    type="income" responsible={""} document_number={""} attachment_data={null}                                />
                                 <div className={Styles.LineSeparator}></div>
                             </div>
                         ))}
