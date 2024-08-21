@@ -1,17 +1,17 @@
 'use client'
 
-import IncomeTable from '@/app/components/Tables/IncomeTable/IncomeTable';
-import Styles from '@/app/page.module.css';
 import ImportXlsx from '@/app/components/Buttons/import-export-xlsx';
+import IncomeTable from '@/app/components/Tables/IncomeTable/IncomeTable';
 import withAuth from '@/app/components/withAuth';
-import { DataItem, ApiResponse } from './types';
+import Styles from '@/app/page.module.css';
 import MessagePopup from '../../components/MessagePopup/MessagePopup';
+import { ApiResponse, DataItem } from './types';
 
-import React, { useEffect, useState } from 'react';
 import { parseCookies } from 'nookies';
+import { useEffect, useState } from 'react';
 
 const Receber = () => {
-    const [data, setData] = useState<DataItem[]>([]);
+    const [data, setData] = useState<any>([]);
     const [isLoading, setIsLoading] = useState(true)
     const [authToken, setAuthToken] = useState<string | null>(null);
     const [popUpData, setPopUpData] = useState({

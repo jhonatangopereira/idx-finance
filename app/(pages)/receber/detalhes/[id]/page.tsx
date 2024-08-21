@@ -1,22 +1,21 @@
 "use client";
 
-import StylesContainer from '@/app/page.module.css';
-import Styles from './page.module.css';
-import InputContainer from '@/app/components/InputContainer/InputContainer';
 import ButtonForm from '@/app/components/AccountPopups/ButtonForm/ButtonForm';
-import { getIncomeById, updateIncome } from '../../../../services/api/incomes';
-import { getBankById } from '../../../../services/api/banks';
-import MessagePopup from '../../../../components/MessagePopup/MessagePopup';
-import { createIncomeSchema } from '../../../../utils/validations/incomes';
 import CreateCategoryPopup from '@/app/components/CreateCategoryPopup/CreateCategoryPopup';
 import CreateCostCenterPopup from '@/app/components/CreateCostCenterPopup/CreateCostCenterPopup';
+import StylesContainer from '@/app/page.module.css';
+import MessagePopup from '../../../../components/MessagePopup/MessagePopup';
+import { getBankById } from '../../../../services/api/banks';
+import { getIncomeById, updateIncome } from '../../../../services/api/incomes';
+import { createIncomeSchema } from '../../../../utils/validations/incomes';
+import Styles from './page.module.css';
 
-import { useState, useCallback, useMemo, useEffect, useRef, ChangeEvent } from 'react';
-import { useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { parseCookies } from 'nookies';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
+import { useParams } from 'next/navigation';
+import { parseCookies } from 'nookies';
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
 type ApportionmentType =  {            
@@ -31,6 +30,16 @@ export default function Receita() {
     const [apportionments, setApportionments] = useState<ApportionmentType[]>([]);
     const ap = apportionments
     const [numberOfInstallments, setNumberOfInstallments] = useState(2);
+    const [installmentValues, setInstallmentValues] = useState<any[]>([
+        {
+          due_date: "01/01/2024",
+          value: "0",
+        },
+        {
+          due_date: "01/01/2024",
+          value: "0",
+        },
+      ]);
     const [hasInstallment, setHasInstallment] = useState(false);
     const paymentSelectedAccountRef = useRef<HTMLOptionElement>(null);
     const [attachmentImageUrl, setAttachmentImageUrl] = useState('');
@@ -44,7 +53,7 @@ export default function Receita() {
     const originalPaymentDateRef = useRef<string | null>(null);
     const originalAlternativeDueDateRef = useRef<string | null>(null);
 
-    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
+    const { register, handleSubmit, formState: { errors }, watch, setValue, resetField } = useForm({
         resolver: yupResolver(createIncomeSchema),
         defaultValues: {
             _value: "0",
@@ -52,7 +61,6 @@ export default function Receita() {
             installment: 0,
             financial_account: 0,
             payment: {
-                number_of_installments: "2x",   
                 interval_between_installments: hasInstallment ? 1 : 1,
                 value: "0",
                 payment_method: '',
@@ -151,16 +159,35 @@ export default function Receita() {
                 setValue('alternative_due_date', data.payment[0].due_date)
             }
             
-            if(data.value !== data.payment[0].value && data.interval_between_installments !== 0) {
-                    setHasInstallment(true)
-                    setValue('payment.number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
-
-                    if (data.value !== data.payment[0].value === data.payment) {
-                        setValue('payment.number_of_installments', "2x")
-                    } else {
-                        setValue('payment.number_of_installments', Math.floor(Number(data.value) / Number(data.payment[0].value)).toString())
-                    }
-                }
+            if (data.payment.length > 1) {
+                setHasInstallment(true);
+                setInstallmentValues(
+                  data.payment.map((payment: any, index: number) => ({
+                    value: parseFloat(payment.value).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }),
+                    due_date: payment.due_date,
+                  }))
+                );
+                data.payment.map((payment: any, index: number) => {
+                  setValue(
+                    `payment.installment_values.${index}.due_date`,
+                    payment.due_date
+                  );
+                  setValue(
+                    `payment.installment_values.${index}.value`,
+                    parseFloat(payment.value).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  );
+                });
+                setValue("number_of_installments", `${data.payment.length}x`);
+                setNumberOfInstallments(data.payment.length);
+              } else {
+                setHasInstallment(false);
+              }
 
             const bankResponse = await getBankById(cookies.authToken, data.financial_account);
             const bankData = await bankResponse.json();
@@ -291,7 +318,7 @@ export default function Receita() {
     }, [])
 
     const _value = watch('_value');
-    const number_of_installments = watch('payment.number_of_installments');
+    const number_of_installments = watch('number_of_installments');
     const payment_status = watch('payment.status');
     const payment_due_date = watch('payment.due_date');
     const payment_date = watch('payment.payment_date');
@@ -386,22 +413,35 @@ export default function Receita() {
     }
 
     const addInstallment = () => {
-        setNumberOfInstallments(previousValue => previousValue += 1);
-        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
-    }
+        if (numberOfInstallments < 12) {
+          setNumberOfInstallments((previousValue) => previousValue + 1);
+          setInstallmentValues((previousValues) => [
+            ...previousValues,
+            { value: "", due_date: "" },
+          ]);
+        }
+      };
 
-    const removeInstallment = () => {
-        setNumberOfInstallments(previousValue => previousValue -= 1);
-        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
-    }
+      const removeInstallment = () => {
+        if (numberOfInstallments > 2) {
+          setNumberOfInstallments((previousValue) => previousValue - 1);
+          setInstallmentValues((previousValues) => previousValues.slice(0, -1));
+          resetField(
+            `payment.installment_values.${numberOfInstallments - 1}.value`
+          );
+          resetField(
+            `payment.installment_values.${numberOfInstallments - 1}.due_date`
+          );
+        }
+      };
 
     const handleRemoveProof = () => {
         setValue('attachment', null);
     }
 
     useEffect(() => {
-        setValue('payment.number_of_installments', `${numberOfInstallments}x`);
-    }, [numberOfInstallments]);
+        setValue("number_of_installments", `${numberOfInstallments}x`);
+      }, [numberOfInstallments]);
 
     useEffect(() => {
         if (attachment !== null && attachment !== undefined  && attachment.length > 0) {
@@ -413,6 +453,13 @@ export default function Receita() {
 
         setValue('competence', new Date().toISOString().split('T')[0])
     }, [attachment, setValue]);
+
+    const installmentArray = Array.from(
+        { length: numberOfInstallments },
+        (_, i) => {
+          return i + 1;
+        }
+      );
 
    return (
         <>
@@ -769,7 +816,7 @@ export default function Receita() {
                                               placeholder='Ex.: 3x'
                                               type='text'
                                               id="installmentsIntervalInput"
-                                              {...register("payment.number_of_installments")}
+                                              {...register("number_of_installments")}
                                               min={2}
                                            />
                                           <div className={Styles.Icons}>
@@ -781,7 +828,7 @@ export default function Receita() {
                                             </button>
                                           </div>
                                          </div>
-                                        {errors.payment?.number_of_installments && <p className={Styles.Error}>{errors.payment.number_of_installments.message}</p>}
+                                        {errors.number_of_installments && <p className={Styles.Error}>{errors.number_of_installments.message}</p>}
                                     </div> 
                                     <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Valor <span className={Styles.AsterisckSpan}>*</span></label>

@@ -60,7 +60,6 @@ export default function CriarReceita() {
       attachment: "",
       cost_center: 0,
       financial_category: 0,
-      number_of_installments: "2x",
       payment: {
         interval_between_installments: hasInstallment ? 1 : 0,
         payment_date: hasInstallment ? "" : "01/01/2024",
