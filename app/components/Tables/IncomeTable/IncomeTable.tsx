@@ -1,11 +1,68 @@
 import AccountCard from "@/app/components/AccountCard/AccountCard";
 import InforCard from '@/app/components/Analytics/InforCards';
+import { format } from "date-fns";
 import Styles from './component.module.css';
-import { TableComponentProps } from "./types";
 
-export default function IncomeTable({ data, linkTo }: TableComponentProps) {
+type Payment = {
+    created_at: string,
+    due_date: string,
+    expense: string | null,
+    id: number,
+    income: string | null,
+    installment: number,
+    payment_account: number,
+    payment_date: string,
+    payment_method: string,
+    release: string | null,
+    status: string,
+    value: number
+}
+
+type Income = {
+    id: number,
+    client: string,
+    competence: string,
+    description: string,
+    value: string,
+    department: string,
+    cost_center: string,
+    code: string,
+    observations: string,
+    status: string,
+    created_at: string,
+    financial_account: string,
+    payment: Payment[],
+    category: string | null,
+    apportionment: string | null,
+    attachment: string | null,
+    document_number: string | null,
+    user: number,
+}
+
+interface TableComponentProps {
+    data: Income[] | null;
+    linkTo: string,
+}
+
+export default function IncomeTable({ data, linkTo }: Readonly<TableComponentProps>) {
  
-    if (data !== null){ 
+    if (data !== null){
+        data = data.map(account => {
+            account.payment = account.payment.toSorted((a: Payment, b: Payment) => {
+                if (a.status === "Recebido" && b.status !== "Recebido") return 1;
+                if (a.status !== "Recebido" && b.status === "Recebido") return -1;
+                return a.due_date.localeCompare(b.due_date);
+            });
+            return account;
+        });
+        console.log("data", data);
+
+        const sortedData = data.toSorted((a: Income, b:Income) => {
+            const order = ["Vencido", "À vencer", "Recebido"];
+            return order.indexOf(a.status) - order.indexOf(b.status);
+        });
+
+        console.log("sortedData", sortedData);
 
         const totalValue = data.reduce((current, account) => {
                 current += Number(account.value);
@@ -66,6 +123,9 @@ export default function IncomeTable({ data, linkTo }: TableComponentProps) {
                             <input type='checkbox' />
                         </div>
                         <div>
+                            Cliente
+                        </div>
+                        <div>
                             Descrição
                         </div>
                         <div>
@@ -75,20 +135,29 @@ export default function IncomeTable({ data, linkTo }: TableComponentProps) {
                             Valor
                         </div>
                         <div>
+                            Número do documento
+                        </div>
+                        <div>
                             Situação
                         </div>
                     </div>
                     <div className={Styles.TableContent}>
-                        {data.map((account, index) => (
+                        {sortedData.map((account : any, index) => (
                             <div key={index}>
                                 <AccountCard 
                                     id={account.id}
                                     description={account.description}
-                                    maturity={account.competence}
+                                    maturity={account.payment.length > 0 ? format(new Date(account.payment[account.payment[0].installment - 1].due_date), 'dd/MM/yyyy') : "-"}
                                     value={Number(account.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     situation={account.status}
+                                    installment_number={account.payment.length}
+                                    current_installment={account.payment.length > 0 ? account.payment[0].installment : 0}
                                     linkTo={`${linkTo}/detalhes/${account.id}`}
-                                    type="income" responsible={""} document_number={""} attachment_data={null}                                />
+                                    type="income"
+                                    responsible={account.client ?? "-"}
+                                    document_number={account.document_number ?? "-"}
+                                    attachment_data={account.attachment}
+                                />
                                 <div className={Styles.LineSeparator}></div>
                             </div>
                         ))}

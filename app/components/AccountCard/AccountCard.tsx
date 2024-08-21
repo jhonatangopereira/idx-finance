@@ -1,6 +1,7 @@
 import downloadIcon from "@/public/images/icons/download.svg";
 import pencilIcon from "@/public/images/icons/pencil.svg";
 import trashIcon from "@/public/images/icons/trash.svg";
+import collectionIcon from "@/public/images/icons/collection.svg";
 import Image from "next/image";
 import Link from "next/link";
 import { parseCookies } from "nookies";
@@ -9,6 +10,12 @@ import { deleteIncomeById } from "../../services/api/incomes";
 import Styles from "./component.module.css";
 import Span from "./Span/Span";
 
+
+type AttachmentDataProps = {
+  data: string;
+  type: string;
+}
+
 type AccountCardProps = {
   responsible: string;
   description: string;
@@ -16,7 +23,9 @@ type AccountCardProps = {
   value: string;
   situation: string;
   document_number: string;
-  attachment_data: File | Blob | string | null;
+  attachment_data: AttachmentDataProps | null;
+  installment_number: number;
+  current_installment: number;
   linkTo: string;
   id: number;
   type: "income" | "expense";
@@ -30,6 +39,8 @@ export default function AccountCard({
   value,
   document_number,
   attachment_data,
+  installment_number,
+  current_installment,
   linkTo,
   id,
   type,
@@ -39,7 +50,7 @@ export default function AccountCard({
   const handleClick = async () => {
     try {
       const validation = confirm(
-        "Tem certeza que deseja excluir essa despesa?"
+        `Tem certeza que deseja excluir essa ${type === "expense" ? "despesa" : "receita"}?`
       );
 
       if (validation) {
@@ -49,45 +60,25 @@ export default function AccountCard({
           window.location.reload();
         } else {
           await deleteIncomeById(authToken, id);
-          alert("Despesa excluída com sucesso!");
+          alert("Receita excluída com sucesso!");
           window.location.reload();
         }
       }
     } catch (err) {
-      console.log("Ocorreu um erro ao excluir a despesa");
+      console.log(`Ocorreu um erro ao excluir a ${type === "expense" ? "despesa" : "receita"}`);
     }
   };
 
   const readFile = async () => {
-    console.log("readFile")
     if (attachment_data) {
-      const file = new Blob([attachment_data]);
-      console.log(file);
-      if (file instanceof File || file instanceof Blob) {
-        console.log("readFile")
-        const attachmentDataURL = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            if (event.target) {
-              resolve(event.target.result);
-            } else {
-              reject(new Error("Failed to load file"));
-            }
-          };
-          reader.readAsDataURL(file);
-        });
-        const attachment_file = attachmentDataURL as string;
-        console.log(attachment_file);
         const link = document.createElement("a");
-        link.href = attachment_file;
-        link.download = "Anexo";
+        link.href = attachment_data.data;
+        link.download = `IDXFinance-${id}-${type}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        console.log("readFile")
       }
-    }
-  };
+    };
 
   return (
     <div className={Styles.Container}>
@@ -102,7 +93,23 @@ export default function AccountCard({
           ? description.substring(0, 28) + "..."
           : description}
       </span>
-      <span>{maturity}</span>
+      <div>
+        <div>
+          {installment_number > 1 &&
+          <>
+            <Image
+              src={collectionIcon}
+              alt="Pencil icon"
+              height={28}
+              width={30}
+              className={`${Styles.Icon} ${Styles.EditIcon}`}
+            />
+            <span>{current_installment}/{installment_number}</span>
+          </>
+          }
+        </div>
+        <span>{maturity}</span>
+      </div>
       <span>R$ {value}</span>
       <span>{document_number}</span>
       <div>
@@ -117,14 +124,16 @@ export default function AccountCard({
               className={`${Styles.Icon} ${Styles.EditIcon}`}
             />
           </Link>
-          <Image
-            onClick={readFile}
-            src={downloadIcon}
-            alt="Download icon"
-            height={28}
-            width={30}
-            className={`${Styles.Icon} ${attachment_data ? "" : Styles.Disabled}`}
-          />
+          {attachment_data && 
+            <Image
+              onClick={readFile}
+              src={downloadIcon}
+              alt="Download icon"
+              height={28}
+              width={30}
+              className={`${Styles.Icon} ${attachment_data ? "" : Styles.Disabled}`}
+            />
+          }
           <Image
             onClick={handleClick}
             src={trashIcon}

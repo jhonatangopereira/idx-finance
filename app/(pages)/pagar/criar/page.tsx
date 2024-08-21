@@ -104,7 +104,7 @@ export default function CreateAccount() {
       ],
     },
   });
-  // console.log(errors);
+  console.log(errors);
 
   const attachment = watch("attachment");
   const paymentStatus = watch("payment.status");
@@ -198,6 +198,8 @@ export default function CreateAccount() {
       attachment: "",
     };
 
+    console.log("CHEGOU ATÉ AQUI!");
+
     if (fields.attachment.length > 0) {
       const file = fields.attachment[0];
       if (file instanceof File || file instanceof Blob) {
@@ -214,13 +216,15 @@ export default function CreateAccount() {
         });
         data.attachment = attachmentDataURL as string;
       }
+    }
 
-      try {
-        await createExpense(data, cookies.authToken);
-        alert("Nova despesa criada com sucesso!");
-      } catch (err) {
-        alert("Falha ao criar a nova despesa.");
-      }
+    console.log(data);
+
+    try {
+      await createExpense(data, cookies.authToken);
+      alert("Nova despesa criada com sucesso!");
+    } catch (err) {
+      alert("Falha ao criar a nova despesa.");
     }
   };
 
@@ -753,16 +757,17 @@ export default function CreateAccount() {
                                 );
                               }}
                             />
+                            {errors.payment?.installment_values?.[index]
+                              ?.value && (
+                              <p className={Styles.Error}>
+                                {
+                                  errors.payment?.installment_values[index]
+                                    ?.value?.message
+                                }
+                              </p>
+                            )}
                           </div>
                         </div>
-                        {errors.payment?.installment_values?.[index]?.value && (
-                          <p className={Styles.Error}>
-                            {
-                              errors.payment?.installment_values[index]?.value
-                                ?.message
-                            }
-                          </p>
-                        )}
                         <div className={Styles.DueDateInput}>
                           <label className={Styles.Label}>
                             Data de vencimento da parcela {index + 1}{" "}
@@ -798,6 +803,9 @@ export default function CreateAccount() {
                             </p>
                           )}
                         </div>
+                        {/* <div className={Styles.ValueInputInstallment}>
+                          <input type="checkbox" />
+                        </div> */}
                       </div>
                     ))}
                   </section>
@@ -1109,9 +1117,7 @@ export default function CreateAccount() {
                       <input
                         type="checkbox"
                         onInput={() => {
-                          console.log("MARCADO COMO PAGO: ", dueDate);
                           setMarkAsPaid((previousValue) => !previousValue);
-                          // setValue("alternative_due_date", dueDate);
                         }}
                         id="receveid"
                         {...register("payment.status")}

@@ -34,15 +34,14 @@ export default function Pagar() {
   
   // Attachment
   const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
-  console.log(attachmentImageUrl);
   const [attachmentStatus, setAttachmentStatus] = useState({
     message: "Nehum anexo adicionado.",
   });
+  console.log(attachmentImageUrl);
 
   // Mark as paid
   const [markAsPaid, setMarkAsPaid] = useState(false);
   const [dueDate, setDueDate] = useState("");
-  console.log(dueDate);
 
   // Mark installments
   const [hasInstallment, setHasInstallment] = useState(false);
@@ -187,8 +186,6 @@ export default function Pagar() {
       apportionment:
         apportionments.length > 0
           ? apportionments.map((a) => {
-              console.log(a.percentage);
-              console.log(a.value);
               return {
                 financial_category: Number(a.financial_category),
                 cost_center: Number(a.cost_center),
@@ -214,35 +211,34 @@ export default function Pagar() {
               };
             })
           : [],
-      attachment: null,
+      attachment: fields.attachment,
     };
-    console.log(apportionments);
-    console.log(fields);
-    console.log(data);
 
     if (fields.attachment.length > 0) {
       const file = fields.attachment[0];
-      const reader = new FileReader();
-
-      reader.onload = async (event) => {
-        if (event.target) {
-          data.attachment = event.target.result;
-        }
-        try {
-          await updateExpense(data);
-          alert("Nova despesa criada com sucesso!");
-        } catch (err) {
-          alert("Falha ao criar a nova despesa.");
-        }
-      };
-      reader.readAsDataURL(file);
-    } else {
-      try {
-        await updateExpense(data);
-        alert("Nova despesa criada com sucesso!");
-      } catch (err) {
-        alert("Falha ao criar a nova despesa.");
+      if (file instanceof File || file instanceof Blob) {
+        const attachmentDataURL = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target) {
+              resolve(event.target.result);
+            } else {
+              reject(new Error("Failed to load file"));
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+        data.attachment = attachmentDataURL as string;
       }
+    }
+    console.log("DADOS DE ENVIO")
+    console.log(data);
+
+    try {
+      await updateExpense(data);
+      alert("Despesa atualizada com sucesso!");
+    } catch (err) {
+      alert("Falha ao atualizar a nova despesa.");
     }
   };
 
@@ -722,7 +718,6 @@ export default function Pagar() {
                         type="date"
                         {...register("alternative_due_date")}
                         onChange={(e) => {
-                          console.log(e.target.value);
                           setDueDate(e.target.value); 
                         }}
                       />

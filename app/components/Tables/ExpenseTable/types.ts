@@ -40,4 +40,4 @@ interface TableComponentProps {
     linkTo: string,
 }
 
-export type { TableComponentProps, Expense };
+export type { Expense, Payment, TableComponentProps };

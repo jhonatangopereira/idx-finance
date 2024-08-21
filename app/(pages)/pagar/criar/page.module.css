@@ -44,6 +44,10 @@
     gap: 12px;
 }
 
+.InstallmentContainer .DueDateInput {
+    width: 250px;
+}
+
 .DueDateInput {
     display: flex;
     flex-direction: column;

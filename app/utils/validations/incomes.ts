@@ -21,14 +21,14 @@ const createIncomeSchema = yup.object().shape({
             then: (schema) => schema.min(1, "Selecione uma conta válida.").required("Escolha uma conta bancária."), 
             otherwise: (schema) => schema.nullable() 
     }),
+    number_of_installments:
+        yup
+        .string()
+        .transform((value, originalValue) => (String(originalValue).trim() === '' ? null : value))
+        .typeError('Por favor, insira um número válido.')
+        .matches(/^\d+x?$/, 'Digite um valor válido.')
+        .required('Digite o número de parcelas.'),
     payment: yup.object({
-        number_of_installments:
-            yup
-            .string()
-            .transform((value, originalValue) => (String(originalValue).trim() === '' ? null : value))
-            .typeError('Por favor, insira um número válido.')
-            .matches(/^\d+x?$/, 'Digite um valor válido.')
-            .required('Digite o número de parcelas.'),
         interval_between_installments:
             yup
             .number()
