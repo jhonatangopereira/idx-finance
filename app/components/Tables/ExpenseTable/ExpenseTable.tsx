@@ -16,6 +16,11 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                 if (a.status !== "Pago" && b.status === "Pago") return -1;
                 return a.due_date.localeCompare(b.due_date);
             });
+            let statusForInstallments: string = "Pago";
+            account.payment.forEach(payment => {
+                if (payment.status === "À vencer" || payment.status === "Vencido") statusForInstallments = payment.status;
+            })
+            account.status = statusForInstallments;
             return account;
         });
         console.log("data", data);
@@ -102,7 +107,7 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                         </div>
                     </div>
                     <div className={Styles.TableContent}>
-                        {sortedData.map((account: any, index: number) => (                            
+                        {sortedData.map((account: any, index: number) => (
                             <div key={index}>
                                 <AccountCard 
                                     responsible={account.supplier_name ?? "-"}
@@ -113,7 +118,7 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                                     document_number={account.document_number ?? "-"}
                                     attachment_data={account.attachment ?? null}
                                     installment_number={account.payment.length}
-                                    current_installment={account.payment[0].installment}
+                                    current_installment={account.payment.length ? account.payment[0].installment : 0}
                                     linkTo={`${linkTo}/detalhes/${account.id}`}
                                     id={Number(account.id)}
                                     type="expense"

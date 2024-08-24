@@ -279,15 +279,15 @@ export default function Pagar() {
           );
           setValue(
             "payment.value",
-            parseFloat(data.payment[0].value).toLocaleString("pt-BR", {
+            parseFloat(data.payment.length ? data.payment[0].value : 0).toLocaleString("pt-BR", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })
           );
-          setValue("payment.due_date", data.payment[0].due_date);
-          setValue("alternative_due_date", data.payment[0].due_date);
-          setValue("payment.payment_method", data.payment[0].payment_method);
-          setValue("financial_account", data.payment[0].payment_account ?? 0);
+          setValue("payment.due_date", data.payment.length ? data.payment[0].due_date : "");
+          setValue("alternative_due_date", data.payment.length ? data.payment[0].due_date : "");
+          setValue("payment.payment_method", data.payment.length ? data.payment[0].payment_method : "");
+          setValue("financial_account", data.payment.length ? data.payment[0].payment_account : "");
           setValue("observations", data.observations);
           setValue("cost_center", Number(data.cost_center));
           setValue("financial_category", data.financial_category);
@@ -360,7 +360,7 @@ export default function Pagar() {
           } else if (data.status === "Pago") {
             setMarkAsPaid(true);
           }
-          setValue("payment.payment_date", data.payment[0].payment_date);
+          setValue("payment.payment_date", data.payment.length ? data.payment[0].payment_date : "");
         });
     } catch (err) {
       console.log(err);

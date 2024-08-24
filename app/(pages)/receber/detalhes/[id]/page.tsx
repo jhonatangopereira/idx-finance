@@ -156,7 +156,7 @@ export default function Receita() {
             }          
 
             if(!hasInstallment) {
-                setValue('alternative_due_date', data.payment[0].due_date)
+                setValue('alternative_due_date', data.payment.length ? data.payment[0].due_date : "");
             }
             
             if (data.payment.length > 1) {
@@ -200,9 +200,9 @@ export default function Receita() {
             const allBanksResponse = await fetchBanks(cookies.authToken);
             
             
-            originalPaymentDueDateRef.current = data.payment[0].due_date;
-            originalPaymentDateRef.current = data.payment[0].payment_date;
-            originalAlternativeDueDateRef.current = data.payment[0].due_date;
+            originalPaymentDueDateRef.current = data.payment.length ? data.payment[0].due_date : "";
+            originalPaymentDateRef.current = data.payment.length ? data.payment[0].payment_date : "";
+            originalAlternativeDueDateRef.current = data.payment.length ? data.payment[0].due_date : "";
          
         } catch (err) {
             console.log(err)
