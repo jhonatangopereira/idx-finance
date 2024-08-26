@@ -14,7 +14,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
 import { parseCookies } from 'nookies';
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { IoMdArrowDropdown, IoMdArrowDropup } from "react-icons/io";
 
@@ -42,13 +42,10 @@ export default function Receita() {
       ]);
     const [hasInstallment, setHasInstallment] = useState(false);
     const paymentSelectedAccountRef = useRef<HTMLOptionElement>(null);
-    const [attachmentImageUrl, setAttachmentImageUrl] = useState('');
-    const paymentAccountRef = useRef<HTMLSelectElement>(null);
+    const [attachmentImageUrl, setAttachmentImageUrl] = useState("");
     const [markAs, setMarkAs] = useState(false);    
     const { id } = useParams();        
     const [isApportionmentInputChecked, setIsApportionmentInputChecked] = useState(false);
-    const [totalValue, setTotalValue] = useState(0);
-    const [percentage, setPercentage] = useState(0);
     const originalPaymentDueDateRef = useRef<string | null>(null);
     const originalPaymentDateRef = useRef<string | null>(null);
     const originalAlternativeDueDateRef = useRef<string | null>(null);
@@ -61,7 +58,6 @@ export default function Receita() {
             installment: 0,
             financial_account: 0,
             payment: {
-                interval_between_installments: hasInstallment ? 1 : 1,
                 value: "0",
                 payment_method: '',
                 due_date: hasInstallment ? '' : '01/01/2024',
@@ -82,35 +78,19 @@ export default function Receita() {
     const [userBanks, setUserBanks] = useState([
         { id: 0, bank_name: '' }
     ]);
-    const [attachmentStatus, setAttachment] = useState({
+    const [attachmentStatus, setAttachmentStatus] = useState({
         message: 'Nehum anexo adicionado.'
     });
     const attachment = watch('attachment');
-    const [useCategories, setUserCategories] = useState([{ id: 0, description: '' }]);
+    const [userCategories, setUserCategories] = useState([{ id: 0, description: '' }]);
     const [userCostCenters, setUserCostCenters] = useState([{ id: 0, description: '' }]);
     const [isCreateCategoryPopupVisible, setIsCreateCategoryPopupVisible] = useState(false);
-    const [isCostCenterPopupVisibe, setIsCostCenterPopupVisible] = useState(false);
+    const [isCostCenterPopupVisible, setIsCostCenterPopupVisible] = useState(false);
     const [popUpData, setPopUpData] = useState({
         open: false,
         title: '',
         text: ''
     });
-
-    const changeTotalValue = useCallback((value: number) => {
-        setTotalValue(value)
-    }, [totalValue]); 
-
-    const changePercentage = useCallback((value: number) => {
-        setPercentage(value)
-    }, [percentage]);
-
-    const apportionmentValue = useMemo(() => (
-        totalValue * (percentage / 100)
-    ), [totalValue, percentage]);
-
-    const toApportionmentValue = useMemo(() => (
-        totalValue - apportionmentValue
-    ), [totalValue, apportionmentValue]); 
 
     const fetchAccountData = async () => {
         const cookies = parseCookies();
@@ -135,7 +115,7 @@ export default function Receita() {
             setValue('payment.due_date', data.payments[0].due_date);
             setValue('alternative_due_date', data.payments[0].due_date);         
             setValue('observations', data.observations);            
-            setValue('financial_account', data.payments[0].payment_account);            
+            setValue('financial_account', data.payments[0].payment_account ?? 0);            
             setValue('payment.payment_method', data.payments[0].payment_method);
             setValue('payment.status', data.status);   
             setValue('payment.interval_between_installments', data.interval_between_installments);
@@ -209,8 +189,9 @@ export default function Receita() {
         }
     }
 
-    const getFields = async (fields: any) => {                
-         const data = {
+    const getFields = async (fields: any) => {
+        const isPaid = (document.querySelector("#receveid") as HTMLInputElement)?.checked;             
+        const data = {
             client: fields.client,
              competence: format(new Date(fields.competence + 'T00:00:00'), 'dd/MM/yyyy'),
             description: fields.description,
@@ -223,17 +204,46 @@ export default function Receita() {
             nsu: "nsu",
             category: fields.financial_category,
             cost_center: Number(fields.cost_center),
-            financial_account: fields.financial_account,
+            financial_account: isPaid ? fields.financial_account : null,
             payment: {
-                number_of_installments: hasInstallment ? Number(fields.payment.number_of_installments.split("x")[0]) : 1,
-                interval_between_installments: hasInstallment ? Number(fields.payment.interval_between_installments) : 0,
-                value:  Number(parseFloat(fields._value.replace(/\./g, '').replace(',', '.')).toFixed(2).toString()) / (hasInstallment ? Number(number_of_installments.split("x")[0]) : 1),
-                payment_method: fields.payment.payment_method,
-                due_date: hasInstallment ? format(new Date(fields.payment.due_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                payment_date: hasInstallment ? format(new Date(fields.payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy') : format(new Date(fields.alternative_due_date + 'T00:00:00'), 'dd/MM/yyyy'),
-                status: fields.payment.status === false ? "" : "Recebido",
-                installment: 1,
-            },
+                payment_method: isPaid ? fields.payment.payment_method : null,
+                payment_date: isPaid
+                  ? format(
+                      new Date(fields.payment.payment_date + "T00:00:00"),
+                      "dd/MM/yyyy"
+                    )
+                  : null,
+                status: isPaid === false ? "" : "Pago",
+                installment_values: hasInstallment
+                  ? installmentValues.map((installment: any) => {
+                      return {
+                        value: Number(
+                          parseFloat(
+                            installment.value.replace(/\./g, "").replace(",", ".")
+                          )
+                            .toFixed(2)
+                            .toString()
+                        ),
+                        due_date: format(
+                          new Date(installment.due_date + "T00:00:00"),
+                          "dd/MM/yyyy"
+                        ),
+                      };
+                    })
+                  : [
+                      {
+                        value: Number(
+                          parseFloat(fields._value.replace(/\./g, "").replace(",", "."))
+                            .toFixed(2)
+                            .toString()
+                        ),
+                        due_date: format(
+                          new Date(fields.alternative_due_date + "T00:00:00"),
+                          "dd/MM/yyyy"
+                        ),
+                      },
+                    ],
+              },
             apportionment: isApportionmentInputChecked ? apportionments.map((a) => { 
                 console.log(a.value)
                 return {
@@ -340,28 +350,16 @@ export default function Receita() {
     }
 
     useEffect(() => {
-        if (Number(number_of_installments.split("x")[0]) > 0) {
-            let value = Number(stringToCurrency(_value!))
-                .toFixed(2)
-                .toString()
-                .replace(".", ",");
-            const formattedValue = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            setValue('payment.value', formattedValue);
-        } else {
-            setValue('payment.value', _value);
-        }
-
-        if (hasInstallment) {
-           setValue('payment.due_date', originalPaymentDueDateRef.current ?? '');
-           setValue('payment.payment_date', originalPaymentDateRef.current ?? '');
-           setValue('alternative_due_date', '01/01/2024');
-        } else {
-            setValue('payment.due_date', '01/01/2024');
-            setValue('payment.payment_date', '01/01/2024');
-            setValue('alternative_due_date', originalAlternativeDueDateRef.current!);
-        }
-
-    }, [_value, number_of_installments, setValue, hasInstallment])
+        let value = stringToCurrency(_value!)
+          .toFixed(2)
+          .toString()
+          .replace(".", ",");
+        const formattedValue = parseFloat(value).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        setValue("payment.value", formattedValue);
+      }, [_value, number_of_installments, setValue]);
 
     useEffect(() => {        
         if (payment_status) {
@@ -369,31 +367,15 @@ export default function Receita() {
         }        
     }, [payment_status])
 
-    const onInstallMentIntervalFielMouseEnter = () => {
-        let installMentsIntervalInput = document.getElementById('installmentsIntervalInput') as HTMLInputElement;       
-        installMentsIntervalInput.value = installMentsIntervalInput.value.split("x")[0]
-        installMentsIntervalInput.setAttribute('type', 'number');
-    }
-
-    const onInstallMentIntervalFielMouseLeave = () => {
-        let installMentsIntervalInput = document.getElementById('installmentsIntervalInput') as HTMLInputElement;       
-        installMentsIntervalInput.setAttribute('type', 'text');
-        installMentsIntervalInput.value =  `${installMentsIntervalInput.value}x`
-    }
-
-    const [firstValue, setFirstValue] = useState("");
-
     const handle_ValueInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const inputValue = event.target.value.replace(/\D/g, '');
         const formattedValue = formatCurrency(inputValue);
-        setFirstValue(formattedValue)
         setValue('_value', formattedValue);
     };  
 
     const handle_PercentageInputChange = (event: ChangeEvent<HTMLInputElement>, id: number): void => {
         const inputValue = event.target.value.replace(/\D/g, '');
         const formattedValue = formatCurrency(inputValue);
-        setFirstValue(formattedValue);
         setValue(`apportionment.${id}.percentage`, formattedValue);
     };  
 
@@ -448,10 +430,10 @@ export default function Receita() {
 
     useEffect(() => {
         if (attachment !== null && attachment !== undefined  && attachment.length > 0) {
-            setAttachment({ message: `Anexo já adicionado.` });
+            setAttachmentStatus({ message: `Anexo já adicionado.` });
         } else {
             setValue('attachment', '');
-            setAttachment({ message: `Nenhum anexo adicionado.` });
+            setAttachmentStatus({ message: `Nenhum anexo adicionado.` });
         }
 
         setValue('competence', new Date().toISOString().split('T')[0])
@@ -471,7 +453,7 @@ export default function Receita() {
                     <CreateCategoryPopup closeFunction={setIsCreateCategoryPopupVisible}/>
                 </div>
             )}
-            {isCostCenterPopupVisibe && (
+            {isCostCenterPopupVisible && (
                 <div className="ModalBackground">
                     <CreateCostCenterPopup closeFunction={setIsCostCenterPopupVisible}/>
                 </div>
@@ -575,7 +557,7 @@ export default function Receita() {
                                                 <label className={Styles.Label}>Categoria <span className={Styles.AsterisckSpan}>*</span></label>
                                                 <select className={Styles.Input} {...register("financial_category")}>
                                                     <option value={0}>Selecione a categoria</option>  
-                                                        {useCategories !== undefined && useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                        {userCategories !== undefined && userCategories.length >= 1 && userCategories.map((category, index) => (
                                                             <option value={category.id} key={index}>{category.description}</option>
                                                         ))}                                        
                                                 </select>
@@ -680,7 +662,7 @@ export default function Receita() {
                                                                 )}
                                                             >
                                                             <option value={0}>Selecione a categoria</option>  
-                                                                {useCategories.length >= 1 && useCategories.map((category, index) => (
+                                                                {userCategories.length >= 1 && userCategories.map((category, index) => (
                                                                     <option value={category.id} key={index}>{category.description}</option>
                                                                 ))}
                                                             </select>
