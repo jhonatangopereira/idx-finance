@@ -340,8 +340,11 @@ export default function Receita() {
     }
 
     useEffect(() => {
-        if (Number(number_of_installments.split("x")[0])! > 0) {
-            let value = (((stringToCurrency(_value!) / Number(number_of_installments.split("x")[0])).toFixed(2).toString()).replace(".", ","))
+        if (Number(number_of_installments.split("x")[0]) > 0) {
+            let value = Number(stringToCurrency(_value!))
+                .toFixed(2)
+                .toString()
+                .replace(".", ",");
             const formattedValue = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             setValue('payment.value', formattedValue);
         } else {

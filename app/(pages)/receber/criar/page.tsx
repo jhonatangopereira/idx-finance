@@ -212,9 +212,7 @@ export default function CriarReceita() {
   };
 
   useEffect(() => {
-    let value = (
-      stringToCurrency(_value!) / Number(number_of_installments!.split("x")[0])
-    )
+    let value = Number(stringToCurrency(_value!))
       .toFixed(2)
       .toString()
       .replace(".", ",");
