@@ -530,7 +530,7 @@ export default function Receita() {
                                      <div className={Styles.LabelInputContainer}>
                                         <label className={Styles.Label}>Forma de pagamento <span className={Styles.AsterisckSpan}>*</span></label>
                                         <select className={Styles.Input} {...register("payment.payment_method")}>
-                                            <option value="">Selecione a forma de pagameto</option>
+                                            <option value="">Selecione a forma de pagamento</option>
                                             <option value="Boleto Bancário">Boleto Bancário</option>
                                             <option value="Cashback">Cashback</option>
                                             <option value="Cheque">Cheque</option>

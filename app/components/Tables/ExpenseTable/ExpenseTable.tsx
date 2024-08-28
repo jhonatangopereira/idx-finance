@@ -11,11 +11,18 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
 
     if (data !== null) {
         data = data.map(account => {
+            account.payment = account.payment.map(payment => {
+                const date = new Date(payment.due_date);
+                payment.due_date_formatted = format(new Date(date.getTime() + date.getTimezoneOffset()*60*1000), "dd/MM/yyyy");
+                return payment;
+            })
+
             account.payment = account.payment.toSorted((a: Payment, b: Payment) => {
                 if (a.status === "Pago" && b.status !== "Pago") return 1;
                 if (a.status !== "Pago" && b.status === "Pago") return -1;
                 return a.due_date.localeCompare(b.due_date);
             });
+            
             let statusForInstallments: string = "Pago";
             account.payment.forEach(payment => {
                 if (payment.status === "À vencer" || payment.status === "Vencido") statusForInstallments = payment.status;
@@ -112,8 +119,12 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                                 <AccountCard 
                                     responsible={account.supplier_name ?? "-"}
                                     description={account.description ?? "-"}
-                                    maturity={account.payment.length > 0 ? format(new Date(account.payment[account.payment[0].installment - 1].due_date), 'dd/MM/yyyy') : "-"}
-                                    value={Number(account.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    maturity={account.payment.length > 0 ?
+                                        account.payment[account.payment[0].installment - 1].due_date_formatted
+                                        : "-"}
+                                    value={Number(
+                                        account.value
+                                    ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     situation={account.status}
                                     document_number={account.document_number ?? "-"}
                                     attachment_data={account.attachment ?? null}

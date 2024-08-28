@@ -1,6 +1,7 @@
 type Payment = {
     created_at: string,
     due_date: string,
+    due_date_formatted: string | null,
     expense: string | null,
     id: number,
     income: string | null,

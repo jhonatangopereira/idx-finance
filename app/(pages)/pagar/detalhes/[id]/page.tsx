@@ -287,7 +287,7 @@ export default function Pagar() {
           setValue("payment.due_date", data.payment.length ? data.payment[0].due_date : "");
           setValue("alternative_due_date", data.payment.length ? data.payment[0].due_date : "");
           setValue("payment.payment_method", data.payment.length ? data.payment[0].payment_method : "");
-          setValue("financial_account", data.payment.length ? data.payment[0].payment_account : "");
+          setValue("financial_account", data.payment.length ? data.payment[0].payment_account ?? 0 : 0);
           setValue("observations", data.observations);
           setValue("cost_center", Number(data.cost_center));
           setValue("financial_category", data.financial_category);

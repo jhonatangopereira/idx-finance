@@ -478,7 +478,7 @@ export default function CriarReceita() {
                           {...register("payment.payment_method")}
                         >
                           <option value="">
-                            Selecione a forma de pagameto
+                            Selecione a forma de pagamento
                           </option>
                           <option value="Boleto Bancário">
                             Boleto Bancário
