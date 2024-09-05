@@ -46,6 +46,8 @@ export default function AccountCard({
   type,
 }: Readonly<AccountCardProps>) {
   const { authToken } = parseCookies();
+  const [day, month, year] = maturity.split("/"); // Divide a string em dia, mês e ano
+  const maturityDate = new Date(`${year}-${month}-${day}`); 
 
   const handleClick = async () => {
     try {
@@ -81,7 +83,7 @@ export default function AccountCard({
     };
 
   return (
-    <div className={`${Styles.Container} ${situation === "Vencido" ? Styles.Expired : ""}`}>
+    <div className={`${Styles.Container} ${situation === "Vencido" || maturityDate.getDate() < new Date().getDate() ? Styles.Expired : ""}`}>
       <input type="checkbox" />
       <span>
         {responsible.length > 28
