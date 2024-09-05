@@ -14,18 +14,27 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
             account.payment = account.payment.map(payment => {
                 const date = new Date(payment.due_date);
                 payment.due_date_formatted = format(new Date(date.getTime() + date.getTimezoneOffset()*60*1000), "dd/MM/yyyy");
+                if (payment.status !== "Pago") {   
+                    if (date.getTime()  + date.getTimezoneOffset()*60*1000< new Date().getTime() ) {
+                        payment.status = "Vencido"
+                    } else {
+                        payment.status = "À vencer"
+                    }
+                }
                 return payment;
             })
 
             account.payment = account.payment.toSorted((a: Payment, b: Payment) => {
                 if (a.status === "Pago" && b.status !== "Pago") return 1;
                 if (a.status !== "Pago" && b.status === "Pago") return -1;
-                return a.due_date.localeCompare(b.due_date);
+                return b.due_date.localeCompare(a.due_date);
             });
             
             let statusForInstallments: string = "Pago";
             account.payment.forEach(payment => {
-                if (payment.status === "À vencer" || payment.status === "Vencido") statusForInstallments = payment.status;
+                if (payment.status === "Vencido" || payment.status === "À vencer") {
+                    statusForInstallments = payment.status;
+                }
             })
             account.status = statusForInstallments;
             return account;
@@ -34,7 +43,8 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
 
         const sortedData = data.toSorted((a: Expense, b:Expense) => {
             const order = ["Vencido", "À vencer", "Pago"];
-            return order.indexOf(a.status) - order.indexOf(b.status);
+            return order.indexOf(a.status) - order.indexOf(b.status) ||
+                (a.payment.length ? new Date(a.payment[0].due_date).getTime() : 0) - (b.payment.length ? new Date(b.payment[0].due_date).getTime() : 0);
         });
 
         console.log("sortedData", sortedData);

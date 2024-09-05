@@ -9,8 +9,7 @@
 
 body {
     display: flex;
-    align-items: flex-start;
-    justify-content: left;
+    width: 99vw;
 }
 
 

@@ -1269,7 +1269,7 @@ export default function Pagar() {
                   </button>
                   <input type="file" id="file" {...register("attachment")}/>
                   <p>{attachmentStatus.message}</p>
-                  {attachmentImageUrl !== "" && (
+                  {attachment !== "" && (
                     <a href={attachmentImageUrl} download="Anexo">
                       Baixar anexo
                     </a>

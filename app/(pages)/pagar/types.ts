@@ -40,6 +40,7 @@ type Payment = {
     installment: number,
     payment_method: string,
     due_date: string,
+    formatted_due_date: string | null,
     payment_date: string,
     status: string,
 }
