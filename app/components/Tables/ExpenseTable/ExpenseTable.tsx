@@ -15,14 +15,14 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                 const date = new Date(payment.due_date);
                 payment.due_date_formatted = format(new Date(date.getTime() + date.getTimezoneOffset()*60*1000), "dd/MM/yyyy");
                 if (payment.status !== "Pago") {   
-                    if (date.getTime()  + date.getTimezoneOffset()*60*1000< new Date().getTime() ) {
+                    if (date.getTime() < new Date().getTime() - 86400000) {
                         payment.status = "Vencido"
                     } else {
                         payment.status = "À vencer"
                     }
                 }
                 return payment;
-            })
+            });
 
             account.payment = account.payment.toSorted((a: Payment, b: Payment) => {
                 if (a.status === "Pago" && b.status !== "Pago") return 1;
@@ -35,7 +35,7 @@ export default function Table({ data, linkTo }: Readonly<TableComponentProps> ) 
                 if (payment.status === "Vencido" || payment.status === "À vencer") {
                     statusForInstallments = payment.status;
                 }
-            })
+            });
             account.status = statusForInstallments;
             return account;
         });
