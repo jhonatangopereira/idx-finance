@@ -2,64 +2,87 @@ import AccountCard from "@/app/components/AccountCard/AccountCard";
 import InforCard from '@/app/components/Analytics/InforCards';
 import { format } from "date-fns";
 import Styles from './component.module.css';
+import { Income, Payment, TableComponentProps } from "./types";
 
-type Payment = {
-    created_at: string,
-    due_date: string,
-    expense: string | null,
-    id: number,
-    income: string | null,
-    installment: number,
-    payment_account: number,
-    payment_date: string,
-    payment_method: string,
-    release: string | null,
-    status: string,
-    value: number
-}
+// type Payment = {
+//     created_at: string,
+//     due_date: string,
+//     expense: string | null,
+//     id: number,
+//     income: string | null,
+//     installment: number,
+//     payment_account: number,
+//     payment_date: string,
+//     payment_method: string,
+//     release: string | null,
+//     status: string,
+//     value: number
+// }
 
-type Income = {
-    id: number,
-    client: string,
-    competence: string,
-    description: string,
-    value: string,
-    department: string,
-    cost_center: string,
-    code: string,
-    observations: string,
-    status: string,
-    created_at: string,
-    financial_account: string,
-    payment: Payment[],
-    category: string | null,
-    apportionment: string | null,
-    attachment: string | null,
-    document_number: string | null,
-    user: number,
-}
+// type Income = {
+//     id: number,
+//     client: string,
+//     competence: string,
+//     description: string,
+//     value: string,
+//     department: string,
+//     cost_center: string,
+//     code: string,
+//     observations: string,
+//     status: string,
+//     created_at: string,
+//     financial_account: string,
+//     payment: Payment[],
+//     category: string | null,
+//     apportionment: string | null,
+//     attachment: string | null,
+//     document_number: string | null,
+//     user: number,
+// }
 
-interface TableComponentProps {
-    data: Income[] | null;
-    linkTo: string,
-}
+// interface TableComponentProps {
+//     data: Income[] | null;
+//     linkTo: string,
+// }
 
 export default function IncomeTable({ data, linkTo }: Readonly<TableComponentProps>) {
  
     if (data !== null){
         data = data.map(account => {
+            account.payment = account.payment.map(payment => {
+                const date = new Date(payment.due_date);
+                payment.due_date_formatted = format(new Date(date.getTime() + date.getTimezoneOffset()*60*1000), "dd/MM/yyyy");
+                if (payment.status !== "Recebido") {   
+                    if (date.getTime() < new Date().getTime() - 86400000) {
+                        payment.status = "Vencido"
+                    } else {
+                        payment.status = "À vencer"
+                    }
+                }
+                return payment;
+            });
+
             account.payment = account.payment.toSorted((a: Payment, b: Payment) => {
                 if (a.status === "Recebido" && b.status !== "Recebido") return 1;
                 if (a.status !== "Recebido" && b.status === "Recebido") return -1;
-                return a.due_date.localeCompare(b.due_date);
+                return b.due_date.localeCompare(a.due_date);
             });
+            
+            let statusForInstallments: string = "Recebido";
+            account.payment.forEach(payment => {
+                if (payment.status === "Vencido" || payment.status === "À vencer") {
+                    statusForInstallments = payment.status;
+                }
+            });
+            account.status = statusForInstallments;
             return account;
         });
         console.log("data", data);
 
         const sortedData = data.toSorted((a: Income, b:Income) => {
             const order = ["Vencido", "À vencer", "Recebido"];
-            return order.indexOf(a.status) - order.indexOf(b.status);
+            return order.indexOf(a.status) - order.indexOf(b.status) ||
+                (a.payment.length ? new Date(a.payment[0].due_date).getTime() : 0) - (b.payment.length ? new Date(b.payment[0].due_date).getTime() : 0);
         });
 
         console.log("sortedData", sortedData);

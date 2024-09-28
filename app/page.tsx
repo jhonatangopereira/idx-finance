@@ -11,7 +11,7 @@ function Content() {
             </div>
             <div className={Styles.Notice}>
                 <p>
-                    Teste.
+                    Este software tem objetivo de auxiliar os gestores financeiros a organizar suas contas.
                 </p>
             </div>
         </div>

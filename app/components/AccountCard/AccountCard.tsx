@@ -83,7 +83,7 @@ export default function AccountCard({
     };
 
   return (
-    <div className={`${Styles.Container} ${situation === "Vencido" || maturityDate.getDate() < new Date().getDate() ? Styles.Expired : ""}`}>
+    <div className={`${Styles.Container} ${situation === "Vencido" ? Styles.Expired : ""}`}>
       <input type="checkbox" />
       <span>
         {responsible.length > 28
