@@ -45,6 +45,8 @@ const createIncomeSchema = yup.object().shape({
                 .required("Digite um valor.")
                 .min(0, "Digite um valor positivo.")
                 .matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
+            is_paid: yup.boolean()
+                .required("Selecione se a parcela foi paga.")
         })),
         value: yup.string().matches(/^(?!0+(?:,00)?$)(\d+(?:\.\d{3})*|0)(?:,\d{1,2})?$/, 'O valor deve ser um número válido.'),
          payment_method: yup.string()
@@ -65,4 +67,4 @@ const createIncomeSchema = yup.object().shape({
     }).nullable()).nullable()
 }); 
 
-export { createIncomeSchema }
+export { createIncomeSchema };
