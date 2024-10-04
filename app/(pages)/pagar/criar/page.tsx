@@ -5,11 +5,11 @@ import CreateCategoryPopup from "@/app/components/CreateCategoryPopup/CreateCate
 import CreateCostCenterPopup from "@/app/components/CreateCostCenterPopup/CreateCostCenterPopup";
 import CreateSupplierPopup from "@/app/components/CreateSupplierPopup/CreateSupplierPopup";
 import StylesContainer from "@/app/page.module.css";
-import { createExpense } from "../../../services/api/expenses";
 import { createExpenseSchema } from "../../../utils/validations/expenses";
 import Styles from "./page.module.css";
 import { DataType } from "./types";
 
+import { createExpense } from "@/app/services/api/expenses";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { format } from "date-fns";
 import { parseCookies } from "nookies";
@@ -29,7 +29,6 @@ export default function CreateAccount() {
 
   // Mark as paid
   const [markAsPaid, setMarkAsPaid] = useState(false);
-  const [dueDate, setDueDate] = useState("");
 
   // Mark installments
   const [hasInstallment, setHasInstallment] = useState(false);
@@ -38,10 +37,12 @@ export default function CreateAccount() {
     {
       due_date: "01/01/2024",
       value: "0",
+      is_paid: false,
     },
     {
       due_date: "01/01/2024",
       value: "0",
+      is_paid: false
     },
   ]);
 
@@ -77,6 +78,7 @@ export default function CreateAccount() {
     defaultValues: {
       _value: "",
       alternative_due_date: hasInstallment ? "01/01/2024" : "",
+      competence: "01/01/2024",
       installment: 0,
       bank_slip: hasBankSlip,
       financial_account: 0,
@@ -159,6 +161,7 @@ export default function CreateAccount() {
                   new Date(installment.due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
+                is_paid: installment.is_paid,
               };
             })
           : [
@@ -172,6 +175,7 @@ export default function CreateAccount() {
                   new Date(fields.alternative_due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
+                is_paid: fields.payment.status
               },
             ],
       },
@@ -197,8 +201,6 @@ export default function CreateAccount() {
           : [],
       attachment: "",
     };
-
-    console.log("CHEGOU ATÉ AQUI!");
 
     if (fields.attachment.length > 0) {
       const file = fields.attachment[0];
@@ -248,6 +250,7 @@ export default function CreateAccount() {
         });
     } catch (err) {
       console.log(err);
+      alert("Falha ao carregar as contas bancárias.");
     }
   };
 
@@ -269,19 +272,15 @@ export default function CreateAccount() {
 
   useEffect(() => {
     if (hasInstallment) {
-      setValue("payment.due_date", "");
-      // setValue("alternative_due_date", "01/01/2024");
+      setValue("alternative_due_date", "01/01/2024");
     } else {
-      setValue("payment.due_date", "01/01/2024");
-      // setValue("alternative_due_date", "");
+      setValue("alternative_due_date", "");
     }
 
     if (markAsPaid) {
       setValue("payment.payment_date", "");
-      // setValue("alternative_due_date", "01/01/2024");
     } else {
       setValue("payment.payment_date", "01/01/2024");
-      // setValue("alternative_due_date", "");
     }
   }, [hasInstallment, markAsPaid]);
 
@@ -358,16 +357,22 @@ export default function CreateAccount() {
 
   const addInstallment = () => {
     if (numberOfInstallments < 12) {
+      setValue(`payment.installment_values.${numberOfInstallments}.due_date`, "");
+      setValue(`payment.installment_values.${numberOfInstallments}.value`, "0,00");
+      setValue(`payment.installment_values.${numberOfInstallments}.is_paid`, false);
       setNumberOfInstallments((previousValue) => previousValue + 1);
       setInstallmentValues((previousValues) => [
         ...previousValues,
-        { value: "", due_date: "" },
+        { value: "", due_date: "", is_paid: false },
       ]);
     }
   };
 
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.due_date`, "01/01/2024");
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.value`, "1");
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.is_paid`, false);
       setNumberOfInstallments((previousValue) => previousValue - 1);
       setInstallmentValues((previousValues) => previousValues.slice(0, -1));
     }
@@ -383,6 +388,22 @@ export default function CreateAccount() {
   useEffect(() => {
     setValue("number_of_installments", `${numberOfInstallments}x`);
   }, [numberOfInstallments]);
+
+  const setIsPaidForInstallments = (isChecked: boolean) => {
+    for (let i = 0; i < numberOfInstallments; i++) {
+      setValue(`payment.installment_values.${i}.is_paid`, isChecked);
+    }
+  };
+
+  const verifyPaymentStatus = () => {
+    for (let i = 0; i < numberOfInstallments; i++) {
+      if (getValues(`payment.installment_values.${i}.is_paid`) === false) {
+        setValue("payment.status", false);
+        return;
+      }
+    }
+    setValue("payment.status", true);
+  };
 
   return (
     <>
@@ -503,10 +524,9 @@ export default function CreateAccount() {
                         <select
                           className={Styles.Input}
                           {...register("financial_account")}
+                          defaultValue={0}
                         >
-                          <option value={0} selected>
-                            Selecione o banco
-                          </option>
+                          <option value={0}>Selecione o banco</option>
                           {userBanks.length > 0 &&
                             userBanks.map((bank, index) => (
                               <option value={bank.id} key={index}>
@@ -588,10 +608,6 @@ export default function CreateAccount() {
                         placeholder="Vencimento"
                         type="date"
                         {...register("alternative_due_date")}
-                        onChange={(e) => {
-                          console.log("DUE DATE ALTERADO: ", e.target.value);
-                          // setDueDate(e.target.value);
-                        }}
                       />
                       {errors.alternative_due_date && (
                         <p className={Styles.Error}>
@@ -640,10 +656,9 @@ export default function CreateAccount() {
                     <select
                       className={Styles.Input}
                       {...register("cost_center")}
+                      defaultValue={0}
                     >
-                      <option value={0} selected>
-                        Selecione o centro de custo
-                      </option>
+                      <option value={0}>Selecione o centro de custo</option>
                       {userCostCenters !== undefined &&
                         userCostCenters.length >= 1 &&
                         userCostCenters.map((category, index) => (
@@ -803,9 +818,36 @@ export default function CreateAccount() {
                             </p>
                           )}
                         </div>
-                        {/* <div className={Styles.ValueInputInstallment}>
-                          <input type="checkbox" />
-                        </div> */}
+                        <div className={Styles.DueDateInput}>
+                          <label className={Styles.Label}>Foi pago?</label>
+                          <label className={Styles.switch}>
+                            <input
+                              type="checkbox"
+                              {...register(
+                                `payment.installment_values.${index}.is_paid`
+                              )}
+                              onInput={(e) => {
+                                // Verify if the checkbox is unchecked
+                                verifyPaymentStatus();
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index
+                                      ? {
+                                          ...installment,
+                                          is_paid: (
+                                            e.target as HTMLInputElement
+                                          ).checked,
+                                        }
+                                      : installment
+                                  )
+                                );
+                              }}
+                            />
+                            <span
+                              className={`${Styles.slider} ${Styles.round}`}
+                            ></span>
+                          </label>
+                        </div>
                       </div>
                     ))}
                   </section>
@@ -1116,8 +1158,11 @@ export default function CreateAccount() {
                     <div>
                       <input
                         type="checkbox"
-                        onInput={() => {
+                        onInput={(event) => {
                           setMarkAsPaid((previousValue) => !previousValue);
+                          setIsPaidForInstallments(
+                            (event.target as HTMLInputElement).checked
+                          );
                         }}
                         id="receveid"
                         {...register("payment.status")}
