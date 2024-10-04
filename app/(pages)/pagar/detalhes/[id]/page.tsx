@@ -41,7 +41,6 @@ export default function Pagar() {
 
   // Mark as paid
   const [markAsPaid, setMarkAsPaid] = useState(false);
-  const [dueDate, setDueDate] = useState("");
 
   // Mark installments
   const [hasInstallment, setHasInstallment] = useState(false);
@@ -50,10 +49,12 @@ export default function Pagar() {
     {
       due_date: "01/01/2024",
       value: "0",
+      is_paid: false,
     },
     {
       due_date: "01/01/2024",
       value: "0",
+      is_paid: false
     },
   ]);
 
@@ -84,6 +85,7 @@ export default function Pagar() {
     formState: { errors },
     watch,
     setValue,
+    getValues,
     resetField
   } = useForm({
     resolver: yupResolver(createExpenseSchema),
@@ -91,6 +93,7 @@ export default function Pagar() {
       _value: "0",
       alternative_due_date: hasInstallment ? "01/01/2024" : "",
       installment: 0,
+      competence: "01/01/2024",
       financial_account: 0,
       bank_slip: hasBankSlip,
       payment: {
@@ -167,6 +170,7 @@ export default function Pagar() {
                   new Date(installment.due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
+                is_paid: installment.is_paid,
               };
             })
           : [
@@ -180,6 +184,7 @@ export default function Pagar() {
                   new Date(fields.alternative_due_date + "T00:00:00"),
                   "dd/MM/yyyy"
                 ),
+                is_paid: fields.payment.status
               },
             ],
       },
@@ -334,6 +339,7 @@ export default function Pagar() {
                   maximumFractionDigits: 2,
                 }),
                 due_date: payment.due_date,
+                is_paid: payment.status === "Pago",
               }))
             );
             data.payment.map((payment: any, index: number) => {
@@ -348,6 +354,10 @@ export default function Pagar() {
                   maximumFractionDigits: 2,
                 })
               );
+              setValue(
+                `payment.installment_values.${index}.is_paid`,
+                payment.status === "Pago"
+              )
             });
             setValue("number_of_installments", `${data.payment.length}x`);
             setNumberOfInstallments(data.payment.length);
@@ -357,8 +367,10 @@ export default function Pagar() {
 
           if (data.status !== "Pago") {
             setMarkAsPaid(false);
+            setValue("payment.status", false);
           } else if (data.status === "Pago") {
             setMarkAsPaid(true);
+            setValue("payment.status", true);
           }
           setValue("payment.payment_date", data.payment.length ? data.payment[0].payment_date : "");
         });
@@ -489,16 +501,22 @@ export default function Pagar() {
 
   const addInstallment = () => {
     if (numberOfInstallments < 12) {
+      setValue(`payment.installment_values.${numberOfInstallments}.due_date`, "");
+      setValue(`payment.installment_values.${numberOfInstallments}.value`, "0,00");
+      setValue(`payment.installment_values.${numberOfInstallments}.is_paid`, false);
       setNumberOfInstallments((previousValue) => previousValue + 1);
       setInstallmentValues((previousValues) => [
         ...previousValues,
-        { value: "", due_date: "" },
+        { value: "", due_date: "", is_paid: false },
       ]);
     }
   };
 
   const removeInstallment = () => {
     if (numberOfInstallments > 2) {
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.due_date`, "01/01/2024");
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.value`, "1");
+      setValue(`payment.installment_values.${numberOfInstallments - 1}.is_paid`, false);
       setNumberOfInstallments((previousValue) => previousValue - 1);
       setInstallmentValues((previousValues) => previousValues.slice(0, -1));
       resetField(
@@ -516,6 +534,23 @@ export default function Pagar() {
       return i + 1;
     }
   );
+
+
+  const setIsPaidForInstallments = (isChecked: boolean) => {
+    for (let i = 0; i < numberOfInstallments; i++) {
+      setValue(`payment.installment_values.${i}.is_paid`, isChecked);
+    }
+  };
+
+  const verifyPaymentStatus = () => {
+    for (let i = 0; i < numberOfInstallments; i++) {
+      if (getValues(`payment.installment_values.${i}.is_paid`) === false) {
+        setValue("payment.status", false);
+        return;
+      }
+    }
+    setValue("payment.status", true);
+  };
 
   return (
     <>
@@ -717,9 +752,6 @@ export default function Pagar() {
                         placeholder="Vencimento"
                         type="date"
                         {...register("alternative_due_date")}
-                        onChange={(e) => {
-                          setDueDate(e.target.value); 
-                        }}
                       />
                       {errors.alternative_due_date && (
                         <p className={Styles.Error}>
@@ -767,8 +799,9 @@ export default function Pagar() {
                     <select
                       className={Styles.Input}
                       {...register("cost_center")}
+                      defaultValue={0}
                     >
-                      <option value={0} selected>
+                      <option value={0}>
                         Selecione o centro de custo
                       </option>
                       {userCostCenters.length >= 1 &&
@@ -927,6 +960,36 @@ export default function Pagar() {
                               }
                             </p>
                           )}
+                        </div>
+                        <div className={Styles.DueDateInput}>
+                          <label className={Styles.Label}>Foi pago?</label>
+                          <label className={Styles.switch}>
+                            <input
+                              type="checkbox"
+                              {...register(
+                                `payment.installment_values.${index}.is_paid`
+                              )}
+                              onInput={(e) => {
+                                // Verify if the checkbox is unchecked
+                                verifyPaymentStatus();
+                                setInstallmentValues((previousValues) =>
+                                  previousValues.map((installment, i) =>
+                                    i === index
+                                      ? {
+                                          ...installment,
+                                          is_paid: (
+                                            e.target as HTMLInputElement
+                                          ).checked,
+                                        }
+                                      : installment
+                                  )
+                                );
+                              }}
+                            />
+                            <span
+                              className={`${Styles.slider} ${Styles.round}`}
+                            ></span>
+                          </label>
                         </div>
                       </div>
                     ))}
@@ -1286,10 +1349,12 @@ export default function Pagar() {
                         type="checkbox"
                         id="receveid"
                         {...register("payment.status")}
-                        checked={markAsPaid}
-                        onChange={() =>
-                          setMarkAsPaid((previousValue) => !previousValue)
-                        }
+                        onInput={(event) => {
+                          setMarkAsPaid((previousValue) => !previousValue);
+                          setIsPaidForInstallments(
+                            (event.target as HTMLInputElement).checked
+                          );
+                        }}
                       />
                       <label htmlFor="receveid">Pago</label>
                       <input
