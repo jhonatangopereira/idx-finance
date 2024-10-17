@@ -36,12 +36,12 @@ export default function CreateAccount() {
   const [installmentValues, setInstallmentValues] = useState<any[]>([
     {
       due_date: "01/01/2024",
-      value: "0",
+      value: "1",
       is_paid: false,
     },
     {
       due_date: "01/01/2024",
-      value: "0",
+      value: "1",
       is_paid: false
     },
   ]);
@@ -90,7 +90,18 @@ export default function CreateAccount() {
       payment: {
         value: "0",
         payment_method: "",
-        due_date: hasInstallment ? "" : "01/01/2024",
+        installment_values: [
+          {
+            due_date: hasInstallment ? "" : "01/01/2024",
+            is_paid: false,
+            value: "1,00",
+          },
+          {
+            due_date: hasInstallment ? "" : "01/01/2024",
+            is_paid: false,
+            value: "1,00",
+          }
+        ],
         payment_date: "",
         status: false,
       },
@@ -269,6 +280,20 @@ export default function CreateAccount() {
     });
     setValue("payment.value", formattedValue);
   }, [_value, setValue]);
+
+  useEffect(() => {
+    if (hasInstallment) {
+      setValue("payment.installment_values.0.value", "0,00");
+      setValue("payment.installment_values.1.value", "0,00");
+      setValue("payment.installment_values.0.due_date", "");
+      setValue("payment.installment_values.1.due_date", "");
+    } else {
+      setValue("payment.installment_values.0.value", "1,00");
+      setValue("payment.installment_values.1.value", "1,00");
+      setValue("payment.installment_values.0.due_date", "01/01/2024");
+      setValue("payment.installment_values.1.due_date", "01/01/2024");
+    }
+  }, [hasInstallment]);
 
   useEffect(() => {
     if (hasInstallment) {
