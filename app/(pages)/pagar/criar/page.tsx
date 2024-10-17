@@ -298,8 +298,6 @@ export default function CreateAccount() {
   useEffect(() => {
     if (hasInstallment) {
       setValue("alternative_due_date", "01/01/2024");
-    } else {
-      setValue("alternative_due_date", "");
     }
 
     if (markAsPaid) {
@@ -852,7 +850,6 @@ export default function CreateAccount() {
                                 `payment.installment_values.${index}.is_paid`
                               )}
                               onInput={(e) => {
-                                // Verify if the checkbox is unchecked
                                 verifyPaymentStatus();
                                 setInstallmentValues((previousValues) =>
                                   previousValues.map((installment, i) =>

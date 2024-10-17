@@ -48,12 +48,12 @@ export default function Pagar() {
   const [installmentValues, setInstallmentValues] = useState<any[]>([
     {
       due_date: "01/01/2024",
-      value: "0",
+      value: "1",
       is_paid: false,
     },
     {
       due_date: "01/01/2024",
-      value: "0",
+      value: "1",
       is_paid: false
     },
   ]);
@@ -99,8 +99,19 @@ export default function Pagar() {
       payment: {
         value: "0",
         payment_method: "",
-        due_date: hasInstallment ? "" : "01/01/2024",
-        payment_date: hasInstallment ? "" : "01/01/2024",
+        installment_values: [
+          {
+            due_date: hasInstallment ? "" : "01/01/2024",
+            is_paid: false,
+            value: "1,00",
+          },
+          {
+            due_date: hasInstallment ? "" : "01/01/2024",
+            is_paid: false,
+            value: "1,00",
+          }
+        ],
+        payment_date: "",
         status: false,
       },
       observations: "",
@@ -363,6 +374,16 @@ export default function Pagar() {
             setNumberOfInstallments(data.payment.length);
           } else {
             setHasInstallment(false);
+            setInstallmentValues([
+              {
+                value: parseFloat(data.value).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+                due_date: data.payment.length ? data.payment[0].due_date : "",
+                is_paid: data.payment.length ? data.payment[0].status === "Pago" : false,
+              },
+            ])
           }
 
           if (data.status !== "Pago") {
@@ -378,6 +399,41 @@ export default function Pagar() {
       console.log(err);
     }
   };
+
+  useEffect(() => {
+    if (hasInstallment) {
+      setValue("payment.installment_values.0.value", "0,00");
+      setValue("payment.installment_values.1.value", "0,00");
+      setValue("payment.installment_values.0.due_date", "");
+      setValue("payment.installment_values.1.due_date", "");
+      setInstallmentValues([
+        { value: "0,00", due_date: "", is_paid: false },
+        { value: "0,00", due_date: "", is_paid: false },
+      ])
+    } else {
+      setValue("payment.installment_values.0.value", "1,00");
+      setValue("payment.installment_values.1.value", "1,00");
+      setValue("payment.installment_values.0.due_date", "01/01/2024");
+      setValue("payment.installment_values.1.due_date", "01/01/2024");
+      setValue("payment.installment_values.0.is_paid", false);
+      setValue("payment.installment_values.1.is_paid", false);
+    }
+    
+    if (markAsPaid) {
+      setValue("payment.installment_values.0.is_paid", true);
+      setValue("payment.installment_values.1.is_paid", true);  
+    }
+  }, [hasInstallment]);
+
+  useEffect(() => {
+    if (hasInstallment) {
+      setValue("alternative_due_date", "01/01/2024");
+    }
+
+    if (!markAsPaid) {
+      setValue("payment.payment_date", "01/01/2024");
+    }
+  }, [hasInstallment, markAsPaid]);
 
   const addNewApportionment = () => {
     setApportionments((previousValue) => [
@@ -503,11 +559,11 @@ export default function Pagar() {
     if (numberOfInstallments < 12) {
       setValue(`payment.installment_values.${numberOfInstallments}.due_date`, "");
       setValue(`payment.installment_values.${numberOfInstallments}.value`, "0,00");
-      setValue(`payment.installment_values.${numberOfInstallments}.is_paid`, false);
+      setValue(`payment.installment_values.${numberOfInstallments}.is_paid`, getValues("payment.status") ?? false);
       setNumberOfInstallments((previousValue) => previousValue + 1);
       setInstallmentValues((previousValues) => [
         ...previousValues,
-        { value: "", due_date: "", is_paid: false },
+        { value: "", due_date: "", is_paid: getValues("payment.status") ?? false },
       ]);
     }
   };
@@ -519,12 +575,6 @@ export default function Pagar() {
       setValue(`payment.installment_values.${numberOfInstallments - 1}.is_paid`, false);
       setNumberOfInstallments((previousValue) => previousValue - 1);
       setInstallmentValues((previousValues) => previousValues.slice(0, -1));
-      resetField(
-        `payment.installment_values.${numberOfInstallments - 1}.value`
-      );
-      resetField(
-        `payment.installment_values.${numberOfInstallments - 1}.due_date`
-      );
     }
   };
 
@@ -917,15 +967,15 @@ export default function Pagar() {
                               }}
                             />
                           </div>
+                          {errors.payment?.installment_values?.[index]?.value && (
+                            <p className={Styles.Error}>
+                              {
+                                errors.payment?.installment_values[index]?.value
+                                  ?.message
+                              }
+                            </p>
+                          )}
                         </div>
-                        {errors.payment?.installment_values?.[index]?.value && (
-                          <p className={Styles.Error}>
-                            {
-                              errors.payment?.installment_values[index]?.value
-                                ?.message
-                            }
-                          </p>
-                        )}
                         <div className={Styles.DueDateInput}>
                           <label className={Styles.Label}>
                             Data de vencimento da parcela {index + 1}{" "}
@@ -970,7 +1020,6 @@ export default function Pagar() {
                                 `payment.installment_values.${index}.is_paid`
                               )}
                               onInput={(e) => {
-                                // Verify if the checkbox is unchecked
                                 verifyPaymentStatus();
                                 setInstallmentValues((previousValues) =>
                                   previousValues.map((installment, i) =>
