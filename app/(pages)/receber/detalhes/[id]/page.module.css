@@ -20,6 +20,42 @@
     row-gap: 16px;
 }
 
+/* Add media queries for lower screens */
+@media (max-width: 768px) {
+    .LaunchInformation {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-areas:
+            'title title'
+            'input1 input2'
+            'input3 input4'
+            'input5 input6'
+            'input7 input8';
+        grid-column-gap: 12px;
+        column-gap: 20px;
+        row-gap: 12px;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .LaunchInformation {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            'title'
+            'input1'
+            'input2'
+            'input3'
+            'input4'
+            'input5'
+            'input6'
+            'input7'
+            'input8';
+        grid-column-gap: 0;
+        column-gap: 0;
+        row-gap: 12px;
+    }
+}
+
 .LaunchInformation h2 {
    grid-area: title;
    margin: 0 0 24px 0;
@@ -65,7 +101,7 @@
     color: #007afd;
     font-weight: bold;
     cursor: pointer;
-    : none;
+    display: none;
 }
 
 .LaunchInformation input {
